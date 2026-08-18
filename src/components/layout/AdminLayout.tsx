@@ -116,18 +116,22 @@ export function AdminLayout() {
 
   const navClass = ({ isActive }: { isActive: boolean }) =>
     cn(
-      'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] font-medium transition-colors',
-      isActive ? 'bg-brand-500/[0.1] text-brand-600' : 'text-muted hover:bg-tint hover:text-ink',
+      'relative flex items-center gap-2.5 rounded-md py-[7px] pl-3 pr-2.5 text-[13px] transition-colors',
+      // A saffron rail marks the active route — the old flat tint was easy to miss
+      // against a warm sidebar, especially in the middle of a long group.
+      isActive
+        ? 'bg-brand-500/[0.08] font-semibold text-brand-600 before:absolute before:inset-y-1 before:left-0 before:w-[3px] before:rounded-full before:bg-saffron-400 before:content-[""]'
+        : 'font-medium text-ink/65 hover:bg-tint hover:text-ink',
     )
 
   const nav = (
-    <nav className="space-y-5">
+    <nav className="space-y-4">
       {NAV_GROUPS.map((group) => {
         const items = group.items.filter((i) => !i.roles || i.roles.includes(user.role))
         if (items.length === 0) return null
         return (
           <div key={group.title}>
-            <p className="mb-1.5 px-2.5 text-[10.5px] font-semibold uppercase tracking-[0.11em] text-muted/80">
+            <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted/70">
               {group.title}
             </p>
             <div className="flex flex-col gap-0.5">
@@ -154,7 +158,7 @@ export function AdminLayout() {
     <div className="min-h-dvh bg-bg">
       <div className="flex">
         {/* Desktop sidebar */}
-        <aside className="sticky top-0 hidden h-dvh w-[228px] shrink-0 flex-col border-r border-line bg-card lg:flex">
+        <aside className="sticky top-0 hidden h-dvh w-[220px] shrink-0 flex-col border-r border-line bg-card lg:flex">
           <Link
             to="/dashboard"
             className="flex items-center gap-2.5 border-b border-line px-4 py-4"

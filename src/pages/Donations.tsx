@@ -7,7 +7,8 @@ import { StatTile } from '@/components/shared/StatTile'
 import { LoadingSkeleton } from '@/components/shared/states'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Checkbox, Input, Select, Textarea } from '@/components/ui/input'
+import { Checkbox, Textarea } from '@/components/ui/input'
+import { Toolbar, ToolbarDate, ToolbarSelect } from '@/components/admin/Toolbar'
 import { Sheet } from '@/components/ui/overlay'
 import { useToast } from '@/components/ui/toast'
 import { issueTaxReceipts, listDevotees, listDonations } from '@/lib/data/api'
@@ -263,12 +264,20 @@ export default function Donations() {
         />
       </div>
 
-      <div className="mb-4 flex flex-wrap items-end gap-2">
-        <Select
+      <Toolbar
+        activeCount={[category, method, receipt, from, to].filter(Boolean).length}
+        onClear={() => {
+          setCategory('')
+          setMethod('')
+          setReceipt('')
+          setFrom('')
+          setTo('')
+        }}
+      >
+        <ToolbarSelect
           value={category}
           onChange={(e) => setCategory(e.target.value)}
           aria-label="Filter by fund"
-          className="w-[180px]"
         >
           <option value="">All funds</option>
           {DONATION_CATEGORIES.map((c) => (
@@ -276,12 +285,11 @@ export default function Donations() {
               {c.label}
             </option>
           ))}
-        </Select>
-        <Select
+        </ToolbarSelect>
+        <ToolbarSelect
           value={method}
           onChange={(e) => setMethod(e.target.value)}
           aria-label="Filter by method"
-          className="w-[140px]"
         >
           <option value="">All methods</option>
           {METHODS.map((m) => (
@@ -289,42 +297,19 @@ export default function Donations() {
               {titleCase(m)}
             </option>
           ))}
-        </Select>
-        <Select
+        </ToolbarSelect>
+        <ToolbarSelect
           value={receipt}
           onChange={(e) => setReceipt(e.target.value)}
           aria-label="Filter by receipt status"
-          className="w-[160px]"
         >
           <option value="">Any receipt status</option>
           <option value="sent">Receipt sent</option>
           <option value="pending">Receipt pending</option>
-        </Select>
-        <div>
-          <label htmlFor="dn-from" className="mb-1 block text-[11.5px] text-muted">
-            From
-          </label>
-          <Input
-            id="dn-from"
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="w-[150px]"
-          />
-        </div>
-        <div>
-          <label htmlFor="dn-to" className="mb-1 block text-[11.5px] text-muted">
-            To
-          </label>
-          <Input
-            id="dn-to"
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="w-[150px]"
-          />
-        </div>
-      </div>
+        </ToolbarSelect>
+        <ToolbarDate label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
+        <ToolbarDate label="To" value={to} onChange={(e) => setTo(e.target.value)} />
+      </Toolbar>
 
       {loading ? (
         <LoadingSkeleton variant="table" rows={10} />

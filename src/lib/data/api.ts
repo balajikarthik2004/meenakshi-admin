@@ -34,6 +34,7 @@ import {
   OCCURRENCES,
   PROJECTS,
   PUJA_CATALOG,
+  OCCURRENCES_PER_YEAR,
   PUJA_UNIT_COST,
   RECURRING_RULES,
   TEMPLE,
@@ -391,12 +392,11 @@ export async function getPujaPnL(): Promise<PujaPnLRow[]> {
   return PUJA_CATALOG.map((puja) => {
     const bookings = BOOKINGS.filter((b) => b.pujaCatalogId === puja.id && b.status !== 'cancelled')
     const collected = bookings.reduce((s, b) => s + b.amount, 0)
-    const fulfilled = OCCURRENCES.filter(
-      (o) => o.status !== 'skipped' && bookings.some((b) => b.id === o.bookingId),
-    ).length
-    // Direct cost scales with occurrences actually served, floored at one per booking.
-    const units = Math.max(fulfilled, bookings.length)
-    const cost = units * (PUJA_UNIT_COST[puja.id] ?? Math.round(puja.basePrice * 0.4))
+    // Revenue here is a full year of sponsorship, so cost has to be a full year too.
+    // Counting occurrences from the 30-day materialisation window against annual
+    // revenue is what made every puja look like it ran at a catastrophic loss.
+    const unitCost = PUJA_UNIT_COST[puja.id] ?? Math.round(puja.basePrice * 0.5)
+    const cost = bookings.reduce((s, b) => s + OCCURRENCES_PER_YEAR[b.cadence] * unitCost, 0)
     const net = collected - cost
     return {
       puja,

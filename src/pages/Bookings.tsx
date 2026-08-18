@@ -7,7 +7,7 @@ import { DataTable, type Column } from '@/components/admin/DataTable'
 import { StatusPill } from '@/components/shared/badges'
 import { LoadingSkeleton } from '@/components/shared/states'
 import { Button } from '@/components/ui/button'
-import { Input, Select } from '@/components/ui/input'
+import { Toolbar, ToolbarDate, ToolbarSelect } from '@/components/admin/Toolbar'
 import { MenuItem, Popover } from '@/components/ui/overlay'
 import { useToast } from '@/components/ui/toast'
 import { listBookings, listDevotees, setBookingStatus } from '@/lib/data/api'
@@ -196,72 +196,42 @@ export default function Bookings() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-end gap-2">
-        <Select
+      <Toolbar
+        activeCount={[status, puja, from, to].filter(Boolean).length}
+        onClear={() => {
+          setStatus('')
+          setPuja('')
+          setFrom('')
+          setTo('')
+        }}
+      >
+        <ToolbarSelect
           value={status}
           onChange={(e) => setStatus(e.target.value)}
           aria-label="Filter by status"
-          className="w-[150px]"
         >
           <option value="">All statuses</option>
-          {['active', 'paused', 'completed', 'cancelled'].map((s) => (
-            <option key={s} value={s}>
-              {titleCase(s)}
+          {['active', 'paused', 'completed', 'cancelled'].map((v) => (
+            <option key={v} value={v}>
+              {titleCase(v)}
             </option>
           ))}
-        </Select>
-        <Select
+        </ToolbarSelect>
+        <ToolbarSelect
           value={puja}
           onChange={(e) => setPuja(e.target.value)}
           aria-label="Filter by puja"
-          className="w-[220px]"
         >
           <option value="">All pujas</option>
-          {PUJA_CATALOG.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
+          {PUJA_CATALOG.map((pj) => (
+            <option key={pj.id} value={pj.id}>
+              {pj.name}
             </option>
           ))}
-        </Select>
-        <div>
-          <label htmlFor="bk-from" className="mb-1 block text-[11.5px] text-muted">
-            Started after
-          </label>
-          <Input
-            id="bk-from"
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-            className="w-[160px]"
-          />
-        </div>
-        <div>
-          <label htmlFor="bk-to" className="mb-1 block text-[11.5px] text-muted">
-            Started before
-          </label>
-          <Input
-            id="bk-to"
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-            className="w-[160px]"
-          />
-        </div>
-        {(status || puja || from || to) && (
-          <Button
-            variant="plain"
-            size="sm"
-            onClick={() => {
-              setStatus('')
-              setPuja('')
-              setFrom('')
-              setTo('')
-            }}
-          >
-            Clear filters
-          </Button>
-        )}
-      </div>
+        </ToolbarSelect>
+        <ToolbarDate label="Started after" value={from} onChange={(e) => setFrom(e.target.value)} />
+        <ToolbarDate label="before" value={to} onChange={(e) => setTo(e.target.value)} />
+      </Toolbar>
 
       {loading ? (
         <LoadingSkeleton variant="table" rows={8} />

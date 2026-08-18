@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Search, Users } from 'lucide-react'
+import { Download, Users } from 'lucide-react'
 import type { MembershipTier, User } from '@/lib/data/types'
 import { PageHeader } from '@/components/layout/AdminLayout'
 import { DataTable, type Column } from '@/components/admin/DataTable'
@@ -8,7 +8,7 @@ import { TierBadge } from '@/components/shared/badges'
 import { LoadingSkeleton } from '@/components/shared/states'
 import { Avatar } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input, Select } from '@/components/ui/input'
+import { Toolbar, ToolbarSelect } from '@/components/admin/Toolbar'
 import { getMyBookings, listDevotees, listDonations, listMemberships } from '@/lib/data/api'
 import { CITIES } from '@/lib/data/mock'
 import { useAsync, useDebounced } from '@/lib/hooks'
@@ -96,10 +96,10 @@ export default function Devotees() {
       sortValue: (r) => r.user.name,
       cell: (r) => (
         <div className="flex items-center gap-2.5">
-          <Avatar initials={r.user.avatarInitials} className="size-8 text-[11.5px]" />
-          <div className="min-w-0">
+          <Avatar initials={r.user.avatarInitials} className="size-7 text-[10.5px]" />
+          <div className="min-w-0 leading-tight">
             <p className="truncate font-medium text-ink">{r.user.name}</p>
-            <p className="truncate text-[12px] text-muted">{r.user.email}</p>
+            <p className="truncate text-[11.5px] text-muted">{r.user.email}</p>
           </div>
         </div>
       ),
@@ -171,33 +171,32 @@ export default function Devotees() {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <div className="relative min-w-[220px] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, phone or email"
-            aria-label="Search devotees"
-            className="pl-9"
-          />
-        </div>
-        <Select
+      <Toolbar
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search name, phone or email"
+        activeCount={[tier, city, joined !== 'all' ? joined : '', search].filter(Boolean).length}
+        onClear={() => {
+          setSearch('')
+          setTier('')
+          setCity('')
+          setJoined('all')
+        }}
+      >
+        <ToolbarSelect
           value={tier}
           onChange={(e) => setTier(e.target.value)}
           aria-label="Filter by tier"
-          className="w-[150px]"
         >
           <option value="">All tiers</option>
           <option value="silver">Silver</option>
           <option value="gold">Gold</option>
           <option value="platinum">Platinum</option>
-        </Select>
-        <Select
+        </ToolbarSelect>
+        <ToolbarSelect
           value={city}
           onChange={(e) => setCity(e.target.value)}
           aria-label="Filter by city"
-          className="w-[150px]"
         >
           <option value="">All cities</option>
           {CITIES.map((c) => (
@@ -205,20 +204,19 @@ export default function Devotees() {
               {c.city}
             </option>
           ))}
-        </Select>
-        <Select
+        </ToolbarSelect>
+        <ToolbarSelect
           value={joined}
           onChange={(e) => setJoined(e.target.value)}
           aria-label="Filter by join date"
-          className="w-[160px]"
         >
           {JOINED_RANGES.map((r) => (
             <option key={r.key} value={r.key}>
               {r.label}
             </option>
           ))}
-        </Select>
-      </div>
+        </ToolbarSelect>
+      </Toolbar>
 
       {loading ? (
         <LoadingSkeleton variant="table" rows={8} />

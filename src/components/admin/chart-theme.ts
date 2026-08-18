@@ -13,7 +13,11 @@ export const CHART = {
   /** Fixed categorical order. Never cycled — a 9th series would fold into "Other". */
   categorical: ['#a3341f', '#a88336', '#1f7a55'] as const,
   /** Single-hue sequential ramp for magnitude-only charts. */
-  sequential: ['#f4dcae', '#d4a25c', '#b87938', '#a3341f', '#6b1a10'] as const,
+  // Sequential ramps are judged on monotonic lightness, not the categorical checks.
+  // OKLab L steps evenly here (0.76 / 0.67 / 0.58 / 0.45 / 0.35) and even the lightest
+  // step clears 2:1 against white — the previous ramp opened at #f4dcae, which left the
+  // four smaller bars washed out and near-identical.
+  sequential: ['#d9a75f', '#c8843c', '#b1651f', '#9c1f16', '#6b1a10'] as const,
   grid: '#e7dfd2',
   axis: '#6b625a',
   surface: '#ffffff',

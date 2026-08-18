@@ -34,8 +34,10 @@ export function PnLTable({ rows, className }: { rows: PujaPnLRow[]; className?: 
         </THead>
         <TBody>
           {rows.map((r) => {
-            const healthy = r.progressPct >= 50
-            const thin = r.progressPct >= 0 && r.progressPct < 50
+            // A 40% margin on a puja is a good result for a temple, not a warning. Bands:
+            // healthy at 20%+, thin below that, under water only when it actually loses money.
+            const healthy = r.progressPct >= 20
+            const thin = r.net >= 0 && r.progressPct < 20
             return (
               <TR key={r.puja.id} className="hover:bg-tint/40">
                 <TD>
@@ -56,9 +58,22 @@ export function PnLTable({ rows, className }: { rows: PujaPnLRow[]; className?: 
                   {money(r.net)}
                 </TD>
                 <TD>
-                  <Badge variant={healthy ? 'leaf' : thin ? 'gold' : 'brand'}>
-                    {r.progressPct}% {healthy ? 'healthy' : thin ? 'thin' : 'under water'}
-                  </Badge>
+                  {/* A bar as well as a badge: margin is a magnitude, and twelve badges
+                      in a column give no sense of which puja is carrying the others. */}
+                  <div className="flex items-center gap-2">
+                    <span className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-line/70">
+                      <span
+                        className={cn(
+                          'block h-full rounded-full',
+                          healthy ? 'bg-leaf-500' : thin ? 'bg-saffron-400' : 'bg-brand-500',
+                        )}
+                        style={{ width: `${Math.min(100, Math.abs(r.progressPct))}%` }}
+                      />
+                    </span>
+                    <Badge variant={healthy ? 'leaf' : thin ? 'gold' : 'brand'}>
+                      {r.progressPct}% {healthy ? 'healthy' : thin ? 'thin' : 'under water'}
+                    </Badge>
+                  </div>
                 </TD>
               </TR>
             )

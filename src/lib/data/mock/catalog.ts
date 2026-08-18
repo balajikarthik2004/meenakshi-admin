@@ -1,4 +1,4 @@
-import type { PujaAddOn, PujaCatalogItem } from '@/lib/data/types'
+import type { Cadence, Money, PujaAddOn, PujaCatalogItem } from '@/lib/data/types'
 
 /** Offered on every recurring sponsorship (Section 10.5, Step 3). */
 export const STANDARD_ADDONS: PujaAddOn[] = [
@@ -184,21 +184,85 @@ export const PUJA_CATALOG: PujaCatalogItem[] = [
 
 export const PUJA_BY_ID = new Map(PUJA_CATALOG.map((p) => [p.id, p]))
 
-/** Direct cost of performing one occurrence — flowers, milk, priest time, prasadam. */
-export const PUJA_UNIT_COST: Record<string, number> = {
-  puja_0001: 128,
-  puja_0002: 205,
-  puja_0003: 340,
-  puja_0004: 72,
-  puja_0005: 96,
-  puja_0006: 61,
-  puja_0007: 58,
-  puja_0008: 44,
-  puja_0009: 105,
-  puja_0010: 92,
-  puja_0011: 88,
-  puja_0012: 118,
+/** How many times a cadence comes round in a year. */
+export const OCCURRENCES_PER_YEAR: Record<Cadence, number> = {
+  daily: 365,
+  weekly: 52,
+  monthly: 12,
+  quarterly: 4,
+  yearly: 1,
+  'one-time': 1,
 }
+
+/**
+ * Direct cost as a share of the sponsorship price, per puja.
+ *
+ * `basePrice` buys a full year at the puja's *default* cadence, so the per-occurrence
+ * cost is the annual cost divided by that cadence's yearly count. Most pujas run a
+ * healthy margin; a couple are thin, and the Kalyanam runs at a deliberate loss — the
+ * temple performs its flagship festival whether or not it pays for itself, and the
+ * board should see that plainly rather than have it averaged away.
+ */
+const DIRECT_COST_RATIO: Record<string, number> = {
+  puja_0001: 0.58, // Murugar Puja
+  puja_0002: 0.64, // Venkateshwara Perumal
+  puja_0003: 1.12, // Meenakshi–Sundareswarar Kalyanam — run at a loss, by choice
+  puja_0004: 0.47, // Ashtalakshmi Deepam
+  puja_0005: 0.55, // Bhairava Puja
+  puja_0006: 0.71, // Pradosha Puja
+  puja_0007: 0.62, // Pournami Puja
+  puja_0008: 0.44, // Amavasya Tarpanam
+  puja_0009: 0.52, // Ganesha Sahasranama
+  puja_0010: 0.66, // Sri Rama Puja
+  puja_0011: 0.93, // Ayyappan Puja — thin, heavy on neyyabhishekam ghee
+  puja_0012: 0.49, // Durga Puja
+}
+
+/** Cost of performing this puja once — flowers, dravyam, prasadam and priest time. */
+export function unitCostOf(puja: PujaCatalogItem): Money {
+  const ratio = DIRECT_COST_RATIO[puja.id] ?? 0.6
+  const perYear = OCCURRENCES_PER_YEAR[puja.defaultCadence]
+  return Math.round((puja.basePrice * ratio) / perYear)
+}
+
+/**
+ * Cadences ordered from rarest to most frequent. A sponsorship is only offered at the
+ * puja's own rhythm or one step either side of it — a temple does not sell a daily
+ * Chithirai Kalyanam, and pricing a $100 new-moon tarpanam as a daily endowment gives
+ * the nonsense figure of $36,500 a year.
+ */
+export const CADENCE_LADDER: Cadence[] = [
+  'one-time',
+  'yearly',
+  'quarterly',
+  'monthly',
+  'weekly',
+  'daily',
+]
+
+/** The cadences a devotee may actually choose for this puja. */
+export function cadenceOptions(puja: PujaCatalogItem): Cadence[] {
+  const i = CADENCE_LADDER.indexOf(puja.defaultCadence)
+  return CADENCE_LADDER.slice(Math.max(0, i - 1), i + 2)
+}
+
+/**
+ * What a sponsorship costs at a given cadence.
+ *
+ * `basePrice` buys a year at the puja's default rhythm, and the price scales with how
+ * many times it is actually performed. That has to stay linear: the temple really does
+ * buy flowers, milk and prasadam every single time, so any discount curve would put
+ * frequent sponsorships permanently below direct cost. Bounding the *cadence* rather
+ * than bending the *price* is what keeps the figures both honest and realistic.
+ */
+export function priceForCadence(puja: PujaCatalogItem, cadence: Cadence): Money {
+  const ratio = OCCURRENCES_PER_YEAR[cadence] / OCCURRENCES_PER_YEAR[puja.defaultCadence]
+  return Math.max(puja.basePrice, Math.round((puja.basePrice * ratio) / 5) * 5)
+}
+
+export const PUJA_UNIT_COST: Record<string, Money> = Object.fromEntries(
+  PUJA_CATALOG.map((p) => [p.id, unitCostOf(p)]),
+)
 
 /** Deity → gradient pair, used by PujaCard in place of photography. */
 export const DEITY_GRADIENT: Record<string, [string, string]> = {

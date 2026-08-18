@@ -48,14 +48,18 @@ export function TrendChart({ data }: { data: { month: string; amount: number }[]
           tickFormatter={(v: number) => moneyShort(v)}
         />
         <Tooltip {...TOOLTIP_STYLE} formatter={(v) => [money(Number(v)), 'Received']} />
+        {/* `monotone` invented smooth troughs between months and made a spiky series
+            look like data that was never recorded — a single major gift can move one
+            month by six figures. A straight join tells the truth, and visible dots mark
+            where the real readings are. */}
         <Area
-          type="monotone"
+          type="linear"
           dataKey="amount"
           stroke={CHART.categorical[0]}
           strokeWidth={2}
           fill="url(#trendFill)"
-          dot={false}
-          activeDot={{ r: 4, strokeWidth: 2, stroke: CHART.surface }}
+          dot={{ r: 2.5, fill: CHART.categorical[0], strokeWidth: 0 }}
+          activeDot={{ r: 5, strokeWidth: 2, stroke: CHART.surface }}
         />
       </AreaChart>
     </ResponsiveContainer>
@@ -139,57 +143,71 @@ export function MetricCard({
         ? CHART.categorical[1]
         : CHART.categorical[0]
 
+  const accent =
+    tone === 'leaf'
+      ? 'before:bg-leaf-500'
+      : tone === 'gold'
+        ? 'before:bg-saffron-400'
+        : tone === 'brand'
+          ? 'before:bg-brand-500'
+          : 'before:bg-line'
+
   return (
     <div
       className={cn(
-        'flex flex-col rounded-[10px] border border-line bg-card p-4 shadow-[var(--shadow-sm)]',
+        // A 3px rail on the left carries the tone, so the card body stays white and the
+        // row reads as one band of figures rather than four separately tinted boxes.
+        'relative overflow-hidden rounded-[10px] border border-line bg-card py-3 pl-4 pr-3.5 shadow-[var(--shadow-sm)]',
+        'before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:content-[""]',
+        accent,
         className,
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-muted">
+      <div className="flex items-center justify-between gap-2">
+        <p className="truncate text-[10.5px] font-semibold tracking-[0.11em] uppercase text-muted">
           {label}
         </p>
-        {Icon ? (
-          <span className="grid size-7 place-items-center rounded-md bg-tint text-brand-500">
-            <Icon className="size-4" />
-          </span>
-        ) : null}
+        {Icon ? <Icon className="size-3.5 shrink-0 text-muted/70" /> : null}
       </div>
 
-      <p className="mt-2 font-serif text-[26px] leading-none text-ink">{value}</p>
-
-      <div className="mt-1.5 flex items-center gap-2">
-        {sub ? <p className="text-[12.5px] text-muted">{sub}</p> : null}
-        {trend ? (
-          <span
-            className={cn(
-              'inline-flex items-center gap-1 text-[12px] font-medium',
-              trend.direction === 'up' ? 'text-leaf-500' : 'text-brand-500',
-            )}
-          >
-            {trend.direction === 'up' ? (
-              <TrendingUp className="size-3.5" />
-            ) : (
-              <TrendingDown className="size-3.5" />
-            )}
-            {trend.value}
-          </span>
-        ) : null}
-      </div>
-
-      {series && series.length > 1 ? (
-        <div className="mt-3 h-9" aria-hidden="true">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={series.map((v, i) => ({ i, v }))}
-              margin={{ top: 2, right: 0, left: 0, bottom: 2 }}
-            >
-              <Line type="monotone" dataKey="v" stroke={stroke} strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+      <div className="mt-1.5 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <p className="font-serif text-[27px] leading-none text-ink">{value}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2">
+            {sub ? <p className="text-[12px] leading-tight text-muted">{sub}</p> : null}
+            {trend ? (
+              <span
+                className={cn(
+                  'inline-flex items-center gap-0.5 text-[11.5px] font-medium',
+                  trend.direction === 'up' ? 'text-leaf-500' : 'text-brand-500',
+                )}
+              >
+                {trend.direction === 'up' ? (
+                  <TrendingUp className="size-3" />
+                ) : (
+                  <TrendingDown className="size-3" />
+                )}
+                {trend.value}
+              </span>
+            ) : null}
+          </div>
         </div>
-      ) : null}
+
+        {/* The sparkline sits beside the number rather than under it — same information,
+            roughly half the card height, so the row stops stretching to match it. */}
+        {series && series.length > 1 ? (
+          <div className="h-8 w-20 shrink-0" aria-hidden="true">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={series.map((v, i) => ({ i, v }))}
+                margin={{ top: 2, right: 0, left: 0, bottom: 2 }}
+              >
+                <Line type="linear" dataKey="v" stroke={stroke} strokeWidth={1.75} dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }

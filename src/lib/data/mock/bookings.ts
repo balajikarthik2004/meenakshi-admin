@@ -1,18 +1,16 @@
 import type { Booking, Cadence, PujaOccurrence } from '@/lib/data/types'
-import { PUJA_CATALOG, STANDARD_ADDONS } from './catalog'
+import { PUJA_CATALOG, STANDARD_ADDONS, cadenceOptions, priceForCadence } from './catalog'
 import { DEVOTEES } from './users'
 import { addDays, chance, id, int, iso, pick, rng, today } from './seed'
 
 export const OFFICIANTS = ['Ramesh Iyer', 'Sathish Sharma', 'Venkatesh Bhattar', 'Gopal Sastrigal']
 
-const CADENCE_MIX: Cadence[] = [
-  ...Array<Cadence>(9).fill('daily'),
-  ...Array<Cadence>(32).fill('weekly'),
-  ...Array<Cadence>(26).fill('monthly'),
-  ...Array<Cadence>(4).fill('quarterly'),
-  ...Array<Cadence>(5).fill('yearly'),
-  ...Array<Cadence>(4).fill('one-time'),
-]
+/**
+ * Which of a puja's permitted cadences a sponsor picks. Most take the rhythm the temple
+ * recommends; a few step it up, a few step it down. Weighted toward the top of the range
+ * so the roster carries realistic daily volume.
+ */
+const LADDER_CHOICE = [0, 1, 1, 1, 2, 2, 2, 2] as const
 
 const STATUS_MIX: Booking['status'][] = [
   ...Array<Booking['status']>(11).fill('active'),
@@ -29,7 +27,8 @@ function buildBookings(): Booking[] {
   for (let i = 0; i < 80; i++) {
     const user = pick(r, DEVOTEES)
     const puja = pick(r, PUJA_CATALOG)
-    const cadence = pick(r, CADENCE_MIX)
+    const options = cadenceOptions(puja)
+    const cadence = options[Math.min(options.length - 1, pick(r, LADDER_CHOICE))]!
     const status = pick(r, STATUS_MIX)
 
     // Started somewhere in the last 11 months so renewals fall across the year.
@@ -57,7 +56,7 @@ function buildBookings(): Booking[] {
       endDate: iso(endDate),
       sankalpamNames,
       addOns,
-      amount: puja.basePrice + addOnTotal,
+      amount: priceForCadence(puja, cadence) + addOnTotal,
       status,
       createdAt: iso(addDays(startDate, -int(r, 1, 9))),
     })

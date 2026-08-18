@@ -11,7 +11,6 @@ import {
 import { PageHeader } from '@/components/layout/AdminLayout'
 import { MetricCard, BarChartByPuja, TrendChart } from '@/components/admin/charts'
 import { TodaysArchanaList, type ArchanaRow } from '@/components/admin/TodaysArchanaList'
-import { StatTile } from '@/components/shared/StatTile'
 import { BreakEvenMeter } from '@/components/shared/BreakEvenMeter'
 import { LoadingSkeleton } from '@/components/shared/states'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
@@ -101,7 +100,7 @@ export default function Dashboard() {
       />
 
       {/* Row 1 — four headline metrics */}
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Donations"
           value={money(stats.donationsYTD)}
@@ -138,7 +137,7 @@ export default function Dashboard() {
       </div>
 
       {/* Row 2 — break-even, action queue, prasadam */}
-      <div className="mt-4 grid gap-3 lg:grid-cols-3">
+      <div className="mt-3 grid items-start gap-3 lg:grid-cols-3">
         <Card className="p-4 lg:col-span-1">
           <p className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-muted">
             Break-even snapshot
@@ -158,14 +157,14 @@ export default function Dashboard() {
           />
         </Card>
 
-        <StatTile
+        <MetricCard
           label="Today’s action queue"
           value={stats.todayQueue}
           sub="Pujas still to be performed today"
           Icon={CalendarCheck}
           tone="brand"
         />
-        <StatTile
+        <MetricCard
           label="Overdue prasadam shipments"
           value={stats.overduePrasadam}
           sub="Sponsorships with prasadam-by-post"
@@ -175,7 +174,7 @@ export default function Dashboard() {
       </div>
 
       {/* Row 3 — charts */}
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+      <div className="mt-3 grid items-start gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Donations received, last 12 months</CardTitle>
