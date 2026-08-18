@@ -21,12 +21,12 @@ export interface DeityImageMeta {
 
 export const DEITY_IMAGES: Record<string, DeityImageMeta> = {
   Meenakshi: {
-    src: '/deities/meenakshi.webp',
+    src: '/deities/meenakshi.png',
     focus: '50% 22%',
     credit: 'Raja Ravi Varma · public domain',
   },
   Sundareswarar: {
-    src: '/deities/sundareswarar.webp',
+    src: '/deities/sundareswarar.png',
     focus: '50% 30%',
     credit: 'LACMA · public domain',
   },

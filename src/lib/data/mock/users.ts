@@ -71,7 +71,7 @@ const STREETS = [
 
 /** 47 devotee names — Tamil, Telugu, Kannada and Malayali households in the Houston metro. */
 const DEVOTEE_NAMES = [
-  'Anand Krishnan',
+  'Balaji Krishnan',
   'Lakshmi Raghavan',
   'Suresh Venkatesan',
   'Priya Balasubramanian',
