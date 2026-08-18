@@ -1,11 +1,23 @@
 import { Link } from 'react-router-dom'
-import { Ticket, Users } from 'lucide-react'
+import { Users } from 'lucide-react'
 import type { TempleEvent } from '@/lib/data/types'
-import { Badge } from '@/components/ui/badge'
 import { buttonVariants } from '@/components/ui/button'
 import { BreakEvenMeter } from './BreakEvenMeter'
 import { DeityArt } from './DeityArt'
 import { cn, fmtDate, money } from '@/lib/utils'
+
+/** Festivals borrow the deity most associated with them, so cards stay recognisable. */
+export function eventImageKey(title: string) {
+  if (/navaratri|durga|vijayadashami/i.test(title)) return 'Durga'
+  if (/ganesh/i.test(title)) return 'Ganesha'
+  if (/lakshmi/i.test(title)) return 'Lakshmi'
+  if (/murugan|thai pusam|panguni/i.test(title)) return 'Murugan'
+  if (/vaikunta|rama|perumal/i.test(title)) return 'Venkateshwara'
+  if (/deepavali|karthigai|deepam/i.test(title)) return 'deepam'
+  if (/chithirai|meenakshi/i.test(title)) return 'Meenakshi'
+  if (/aadi|pournami|pradosha/i.test(title)) return 'Sundareswarar'
+  return 'lamps'
+}
 
 export function EventCard({
   event,
@@ -24,40 +36,41 @@ export function EventCard({
   return (
     <article
       className={cn(
-        'flex flex-col overflow-hidden rounded-[10px] border border-line bg-card shadow-[var(--shadow)] transition-shadow hover:shadow-[var(--shadow-lg)]',
+        'group flex flex-col overflow-hidden rounded-[10px] border border-line bg-card shadow-[var(--shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:border-saffron-300/70 hover:shadow-[var(--shadow)]',
         className,
       )}
     >
-      <div className="relative">
+      <div className="relative isolate">
         <DeityArt
-          deity={event.title.includes('Navaratri') ? 'Durga' : 'Meenakshi'}
-          className="h-24 w-full"
-          label={`${event.title} flyer`}
+          deity={eventImageKey(event.title)}
+          className="aspect-[16/9] w-full transition-transform duration-500 group-hover:scale-[1.05]"
+          label={event.title}
         />
-        <div className="absolute right-3 top-3 rounded-[8px] border border-line bg-card px-2.5 py-1 text-center shadow-[var(--shadow-sm)]">
-          <span className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-brand-500">
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-900/70 to-transparent" />
+
+        {/* Date medallion, in the temple's brass */}
+        <div className="absolute left-3.5 top-3.5 rounded-[8px] border border-saffron-300/50 bg-brand-800/85 px-2.5 py-1 text-center backdrop-blur">
+          <span className="block text-[9.5px] font-semibold uppercase tracking-[0.14em] text-saffron-300">
             {fmtDate(date, 'MMM')}
           </span>
-          <span className="block font-serif text-[18px] leading-none text-ink">
+          <span className="block font-serif text-[19px] leading-none text-white">
             {fmtDate(date, 'd')}
           </span>
         </div>
+
+        <span
+          className={cn(
+            'absolute right-3 top-3 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
+            event.ticketPrice ? 'bg-saffron-400/95 text-brand-800' : 'bg-leaf-500/95 text-white',
+          )}
+        >
+          {event.ticketPrice ? money(event.ticketPrice) : 'Free'}
+        </span>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-serif text-[17px] leading-snug">{event.title}</h3>
-          {event.ticketPrice ? (
-            <Badge variant="brand">
-              <Ticket className="size-3" />
-              {money(event.ticketPrice)}
-            </Badge>
-          ) : (
-            <Badge variant="leaf">Free</Badge>
-          )}
-        </div>
-
-        <p className="line-clamp-2 text-[13px] leading-relaxed text-muted">{event.description}</p>
+        <h3 className="font-serif text-[19px] leading-snug">{event.title}</h3>
+        <p className="line-clamp-2 text-[13.5px] leading-relaxed text-muted">{event.description}</p>
 
         {showMeter ? (
           <BreakEvenMeter
@@ -65,13 +78,13 @@ export function EventCard({
             collected={event.collectedAmount}
             label="Festival budget"
             compact
-            className="mt-1"
+            className="mt-1.5"
           />
         ) : null}
 
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-3">
           <span className="inline-flex items-center gap-1.5 text-[12.5px] text-muted">
-            <Users className="size-3.5" />
+            <Users className="size-3.5 text-saffron-500" />
             {event.rsvpCount} attending
           </span>
           <Link

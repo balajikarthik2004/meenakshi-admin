@@ -1,38 +1,67 @@
 @import 'tailwindcss';
 
-/* ================================
-   Sri Meenakshi Temple design tokens
-   ================================ */
+/* ================================================================
+   Sri Meenakshi Devasthanam — design tokens
+
+   The palette is taken from the temple's own identity: the marigold
+   saffron of the entrance banner, the deep kumkum maroon of its
+   lettering, and brass lamp gold. Cream paper rather than white, so
+   photographs of the deities sit on a warm ground instead of a
+   clinical one.
+   ================================================================ */
+
+/* Marcellus — an inscriptional roman. Self-hosted (14 KB, one weight)
+   so the site needs no third-party request and no CLS on first paint. */
+@font-face {
+  font-family: 'Marcellus';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/marcellus-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+2000-206F, U+2074,
+    U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @theme {
-  /* Brand palette — kumkum red · brass gold · leaf green */
-  --color-brand-50: #fbf1e0;
-  --color-brand-100: #f4dcae;
-  --color-brand-200: #e6c58a;
-  --color-brand-300: #d4a25c;
-  --color-brand-400: #b87938;
-  --color-brand-500: #a3341f; /* primary */
-  --color-brand-600: #8a2515;
-  --color-brand-700: #6b1a10;
-  --color-brand-800: #4a1108;
-  --color-brand-900: #2e0a04;
+  /* Kumkum maroon — primary */
+  --color-brand-50: #fdf3ee;
+  --color-brand-100: #f9ddcd;
+  --color-brand-200: #efb896;
+  --color-brand-300: #de8b56;
+  --color-brand-400: #bf5a27;
+  --color-brand-500: #9c1f16;
+  --color-brand-600: #7f150f;
+  --color-brand-700: #5f0f0a;
+  --color-brand-800: #400906;
+  --color-brand-900: #280503;
 
-  --color-gold-400: #d4b466;
-  --color-gold-500: #c9a24a;
-  --color-gold-600: #a88336;
+  /* Marigold saffron — the temple's welcome colour */
+  --color-saffron-100: #fdf0d3;
+  --color-saffron-200: #fbdf9f;
+  --color-saffron-300: #f8c95f;
+  --color-saffron-400: #f2ab21;
+  --color-saffron-500: #e08c0a;
+  --color-saffron-600: #b46c06;
 
+  /* Brass lamp gold */
+  --color-gold-400: #d7bc78;
+  --color-gold-500: #bf9a3f;
+  --color-gold-600: #97772a;
+
+  /* Tulsi green — achieved / success */
   --color-leaf-400: #4a8a6e;
-  --color-leaf-500: #2f6b52;
-  --color-leaf-600: #1f5040;
+  --color-leaf-500: #2c6b50;
+  --color-leaf-600: #1c5040;
 
-  --color-ink: #1a1613;
-  --color-muted: #6b625a;
-  --color-line: #e7dfd2;
-  --color-bg: #faf7f2;
+  --color-ink: #241a14;
+  --color-muted: #6f6157;
+  --color-line: #ece2d2;
+  --color-bg: #fdfbf6;
   --color-card: #ffffff;
-  --color-tint: #fbf1e0;
+  --color-tint: #fbf3e4;
 
   /* Typography */
-  --font-serif: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+  --font-serif: 'Marcellus', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
   --font-sans:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, 'Helvetica Neue', Arial,
     sans-serif;
@@ -43,10 +72,10 @@
   --radius: 10px;
   --radius-lg: 14px;
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(60, 40, 20, 0.06);
-  --shadow-lg: 0 8px 32px rgba(60, 40, 20, 0.1);
+  /* Shadows — warm, never grey */
+  --shadow-sm: 0 1px 2px rgba(64, 34, 12, 0.05);
+  --shadow: 0 1px 2px rgba(64, 34, 12, 0.04), 0 6px 20px rgba(64, 34, 12, 0.07);
+  --shadow-lg: 0 12px 40px rgba(64, 34, 12, 0.14);
 }
 
 /* Tailwind v4 defaults borders to currentColor; keep the warm hairline instead. */
@@ -62,20 +91,40 @@ body {
   background: var(--color-bg);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: 14.5px;
+  font-size: 15px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Utility helpers */
+/* Display type: Marcellus is small on the body, so headings get a nudge up
+   in size and a touch of negative tracking to hold together at scale. */
 .font-serif {
   font-family: var(--font-serif);
+  letter-spacing: -0.005em;
+}
+
+/* A hairline of saffron under section headings — the thread that ties the
+   page together without adding another box. */
+.rule-saffron::after {
+  content: '';
+  display: block;
+  width: 42px;
+  height: 2px;
+  margin-top: 10px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--color-saffron-400), var(--color-gold-500));
+}
+.rule-saffron.rule-center::after {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* Route-change fade (Section 13 — subtle motion only) */
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(2px);
+    transform: translateY(3px);
   }
   to {
     opacity: 1;
@@ -83,7 +132,27 @@ body {
   }
 }
 .animate-fade-in {
-  animation: fade-in 150ms ease-out both;
+  animation: fade-in 180ms ease-out both;
+}
+
+/* The slow drift behind hero photography — barely perceptible, but it stops a
+   still image from feeling like a dead placeholder. */
+@keyframes slow-pan {
+  from {
+    transform: scale(1.06) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.13) translate3d(-1.2%, -1.2%, 0);
+  }
+}
+.animate-slow-pan {
+  animation: slow-pan 24s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-slow-pan,
+  .animate-fade-in {
+    animation: none;
+  }
 }
 
 /* Print styling for receipt / AGM dialogs */

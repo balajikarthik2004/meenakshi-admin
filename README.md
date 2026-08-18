@@ -44,6 +44,20 @@ Chart colours live in `src/components/admin/chart-theme.ts`, separate from the U
 tokens. The three categorical hues were validated for lightness, chroma, colour-blind
 separation and contrast against a white chart surface.
 
+## Design
+
+The palette and imagery are taken from the temple's own identity at meenakshi.org —
+marigold saffron, kumkum maroon, brass lamp gold — but rebuilt as a restrained,
+photographic layout rather than a dense one.
+
+- **Display face**: Marcellus, self-hosted (14 KB, one weight), so there is no
+  third-party font request and no layout shift on first paint.
+- **Deity photography**: `public/deities/` — public-domain and CC works from Wikimedia
+  Commons, resized to WebP. Full attribution in `public/deities/CREDITS.md`. **Replace
+  these with the Devasthanam's own photography before production.**
+- The homepage hero ships at three widths via `srcset` and is preloaded, because it is
+  the LCP element on every first visit.
+
 ## Deploy
 
 Vercel — framework preset "Vite", auto from `main`. `vercel.json` adds the SPA rewrite
