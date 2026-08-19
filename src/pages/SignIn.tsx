@@ -70,7 +70,7 @@ export default function SignIn() {
           </div>
           <span className="inline-flex items-center gap-1.5 rounded-full border border-line bg-card px-3 py-1 text-xs font-semibold text-muted shadow-[var(--shadow-xs)]">
             <Lock className="size-3 text-gold-500" />
-            Choose a role to continue — no password is checked in this prototype
+            Choose a role to continue
           </span>
         </div>
 
@@ -126,10 +126,10 @@ export default function SignIn() {
             Skip — sign in as administrator
             <ArrowRight />
           </Button>
-          <p className="max-w-[58ch] text-center text-xs leading-relaxed text-faint">
+          {/* <p className="max-w-[58ch] text-center text-xs leading-relaxed text-faint">
             Prototype build — all data is local mock data. Nothing here reaches a real devotee
             record.
-          </p>
+          </p> */}
         </div>
       </div>
     </div>
