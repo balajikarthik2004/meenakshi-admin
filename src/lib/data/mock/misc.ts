@@ -172,13 +172,13 @@ export const EMAIL_TEMPLATES = [
     id: 'tpl_booking',
     name: 'Puja booking confirmation',
     subject: 'Your {{pujaName}} sponsorship is confirmed',
-    body: 'Om Namah Shivaya {{devoteeName}},\n\nYour sponsorship of {{pujaName}} ({{cadence}}) is confirmed. Booking {{bookingId}}.\nSankalpam will be offered in the name(s): {{sankalpamNames}}.\n\nSri Meenakshi Devasthanam, Pearland TX',
+    body: 'Om Namah Shivaya {{devoteeName}},\n\nYour sponsorship of {{pujaName}} ({{cadence}}) is confirmed. Booking {{bookingId}}.\nSankalpam will be offered in the name(s): {{sankalpamNames}}.\n\nSri Meenakshi Temple Society, Pearland TX',
   },
   {
     id: 'tpl_receipt',
     name: 'Tax receipt',
     subject: 'Your {{year}} contribution statement',
-    body: 'Dear {{devoteeName}},\n\nThank you for your support. Your total deductible contribution for {{year}} was {{amount}}.\nSri Meenakshi Devasthanam is a 501(c)(3) organization; EIN {{ein}}. No goods or services were provided in exchange.',
+    body: 'Dear {{devoteeName}},\n\nThank you for your support. Your total deductible contribution for {{year}} was {{amount}}.\nSri Meenakshi Temple Society is a 501(c)(3) organization; EIN {{ein}}. No goods or services were provided in exchange.',
   },
   {
     id: 'tpl_renewal',

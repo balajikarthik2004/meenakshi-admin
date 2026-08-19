@@ -39,7 +39,7 @@ export const TIERS: TierSpec[] = [
   {
     tier: 'platinum',
     price: 1000,
-    tagline: 'Patron of the Devasthanam',
+    tagline: 'Patron of the Temple Society',
     perks: [
       '15% off facility bookings',
       'One free Archana per year',

@@ -74,7 +74,7 @@ export function MockSuccessScreen({
         <div className="space-y-3 p-5">
           <div className="space-y-0.5 text-sm text-muted">
             <p>
-              <span className="font-medium text-ink">From:</span> Sri Meenakshi Devasthanam
+              <span className="font-medium text-ink">From:</span> Sri Meenakshi Temple Society
               &lt;office@smdpearland.org&gt;
             </p>
             <p>

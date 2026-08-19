@@ -2,7 +2,7 @@ import type { Temple } from '@/lib/data/types'
 
 export const TEMPLE: Temple = {
   id: 'temple_0001',
-  name: 'Sri Meenakshi Devasthanam',
+  name: 'Sri Meenakshi Temple Society',
   address: '17130 McLean Road',
   city: 'Pearland',
   state: 'TX',
