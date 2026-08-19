@@ -71,7 +71,7 @@ const STREETS = [
 
 /** 47 devotee names — Tamil, Telugu, Kannada and Malayali households in the Houston metro. */
 const DEVOTEE_NAMES = [
-  'Balaji Krishnan',
+  'Santhosh Kumar',
   'Lakshmi Raghavan',
   'Suresh Venkatesan',
   'Priya Balasubramanian',
@@ -129,7 +129,7 @@ const initialsOf = (name: string) =>
     .join('')
 
 const emailOf = (name: string, n: number) =>
-  `${name.toLowerCase().replace(/[^a-z]+/g, '.')}${n % 7 === 0 ? n : ''}@example.com`
+  `${name.toLowerCase().replace(/[^a-z]+/g, '.')}${n % 7 === 0 ? n : ''}@gmail.com`
 
 function buildUsers(): User[] {
   const r = rng(20260817)
