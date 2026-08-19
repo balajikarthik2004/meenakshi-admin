@@ -3,7 +3,6 @@ import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react
 import {
   BadgeDollarSign,
   BookOpen,
-  Building2,
   CalendarDays,
   CalendarCheck,
   Gauge,

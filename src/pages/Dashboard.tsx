@@ -10,18 +10,16 @@ import {
 } from 'lucide-react'
 import { PageShell } from '@/components/layout/PageShell'
 import { MetricCard, BarChartByPuja, TrendChart } from '@/components/admin/charts'
-import { TodaysArchanaList, type ArchanaRow } from '@/components/admin/TodaysArchanaList'
+import { type ArchanaRow } from '@/components/admin/TodaysArchanaList'
 import { BreakEvenMeter } from '@/components/shared/BreakEvenMeter'
 import { LoadingSkeleton } from '@/components/shared/states'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
-import { useToast } from '@/components/ui/toast'
 import {
   getAdminStats,
   getOccurrencesOn,
   getTransparencySnapshot,
   listBookings,
-  setOccurrenceStatus,
 } from '@/lib/data/api'
 import { USERS } from '@/lib/data/mock'
 import { useAuthStore } from '@/lib/store/auth'
@@ -30,9 +28,8 @@ import { fmtDate, money, moneyShort } from '@/lib/utils'
 
 export default function Dashboard() {
   const user = useAuthStore((s) => s.user)!
-  const { toast } = useToast()
 
-  const { data, loading, refresh } = useAsync(
+  const { data, loading } = useAsync(
     async () =>
       Promise.all([
         getAdminStats(),
@@ -64,18 +61,6 @@ export default function Dashboard() {
       }
     })
     .sort((a, b) => a.occurrence.scheduledAt.localeCompare(b.occurrence.scheduledAt))
-
-  const complete = async (ids: string[]) => {
-    await Promise.all(ids.map((id) => setOccurrenceStatus(id, 'completed')))
-    toast(`${ids.length} puja${ids.length === 1 ? '' : 's'} marked completed`)
-    refresh()
-  }
-
-  const skip = async (ids: string[]) => {
-    await Promise.all(ids.map((id) => setOccurrenceStatus(id, 'skipped')))
-    toast(`${ids.length} marked skipped`, { tone: 'warn' })
-    refresh()
-  }
 
   const trendSeries = stats.monthlyTrend.map((m) => m.amount)
 
