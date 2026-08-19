@@ -25,10 +25,8 @@ export function BreakEvenMeter({
   return (
     <div className={cn('min-w-0', className)}>
       <div className="mb-1.5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-        <span className="text-[12.5px] font-medium text-ink">{label ?? 'Break-even'}</span>
-        <span
-          className={cn('text-[12.5px] font-semibold', met ? 'text-leaf-500' : 'text-brand-600')}
-        >
+        <span className="text-sm font-medium text-ink">{label ?? 'Break-even'}</span>
+        <span className={cn('text-sm font-semibold', met ? 'text-leaf-500' : 'text-brand-600')}>
           {Math.round(pctRaw)}% of {compact ? moneyShort(target) : money(target)}
         </span>
       </div>
@@ -37,7 +35,7 @@ export function BreakEvenMeter({
         tone={met ? 'leaf' : 'brand'}
         label={`${label ?? 'Break-even'} — ${Math.round(pctRaw)}% of target raised`}
       />
-      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-[12px] text-muted">
+      <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-sm text-muted">
         <span>
           <span className="font-medium text-ink">
             {compact ? moneyShort(collected) : money(collected)}

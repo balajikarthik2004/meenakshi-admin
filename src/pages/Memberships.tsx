@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CalendarClock, Gift, Loader2, Mail } from 'lucide-react'
 import type { Membership, MembershipTier, User } from '@/lib/data/types'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { DataTable, type Column } from '@/components/admin/DataTable'
 import { StatTile } from '@/components/shared/StatTile'
 import { StatusPill, TierBadge } from '@/components/shared/badges'
@@ -118,7 +118,7 @@ export default function Memberships() {
       cell: (r) => (
         <div className="min-w-0">
           <p className="truncate font-medium text-ink">{r.user?.name ?? 'Unknown'}</p>
-          <p className="truncate text-[12px] text-muted">{r.user?.email}</p>
+          <p className="truncate text-sm text-muted">{r.user?.email}</p>
         </div>
       ),
     },
@@ -150,7 +150,7 @@ export default function Memberships() {
         <span className="whitespace-nowrap">
           {fmtDate(r.membership.endDate)}
           {r.membership.status === 'active' && r.daysToRenewal <= 60 && r.daysToRenewal >= 0 ? (
-            <span className="ml-2 text-[12px] text-brand-600">in {r.daysToRenewal}d</span>
+            <span className="ml-2 text-sm text-brand-600">in {r.daysToRenewal}d</span>
           ) : null}
         </span>
       ),
@@ -171,18 +171,17 @@ export default function Memberships() {
   ]
 
   return (
-    <>
-      <PageHeader
-        title="Memberships"
-        subtitle={`${allRows.filter((r) => r.membership.status === 'active').length} active · ${money(revenue)} annual membership revenue`}
-        actions={
-          <Button onClick={() => setGifting(true)}>
-            <Gift />
-            Gift a membership
-          </Button>
-        }
-      />
-
+    <PageShell
+      eyebrow="People"
+      title="Memberships"
+      description={`${allRows.filter((r) => r.membership.status === 'active').length} active · ${money(revenue)} annual membership revenue`}
+      actions={
+        <Button onClick={() => setGifting(true)}>
+          <Gift />
+          Gift a membership
+        </Button>
+      }
+    >
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {(['silver', 'gold', 'platinum'] as const).map((t) => (
           <StatTile
@@ -248,9 +247,9 @@ export default function Memberships() {
           )}
         </div>
 
-        <Card className="xl:sticky xl:top-6">
+        <Card className="xl:sticky xl:top-[calc(var(--page-chrome-h,0px)+1.25rem)]">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line p-4">
-            <h2 className="flex items-center gap-2 font-serif text-[18px]">
+            <h2 className="flex items-center gap-2 font-bold text-lg">
               <CalendarClock className="size-4 text-brand-500" />
               Renewals due
             </h2>
@@ -263,7 +262,7 @@ export default function Memberships() {
           </div>
 
           {renewalsDue.length === 0 ? (
-            <p className="p-5 text-[13px] text-muted">
+            <p className="p-5 text-base text-muted">
               Nothing renews in the next {window} days. The next expiry is{' '}
               {allRows
                 .filter((r) => r.membership.status === 'active' && r.daysToRenewal > 0)
@@ -282,13 +281,13 @@ export default function Memberships() {
                 {renewalsDue.slice(0, 8).map((r) => (
                   <li key={r.membership.id} className="flex items-center gap-3 p-3.5">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[13.5px] font-medium text-ink">{r.user?.name}</p>
-                      <p className="text-[12px] text-muted">
+                      <p className="truncate text-base font-medium text-ink">{r.user?.name}</p>
+                      <p className="text-sm text-muted">
                         {titleCase(r.membership.tier)} · {fmtDate(r.membership.endDate)} ·{' '}
                         {r.membership.autoRenew ? 'auto-renews' : 'manual renewal'}
                       </p>
                     </div>
-                    <span className="shrink-0 text-[12.5px] font-medium text-brand-600">
+                    <span className="shrink-0 text-sm font-medium text-brand-600">
                       {r.daysToRenewal}d
                     </span>
                   </li>
@@ -355,12 +354,12 @@ export default function Memberships() {
               ))}
             </Select>
           </Field>
-          <label className="flex cursor-pointer items-center gap-3 text-[13.5px]">
+          <label className="flex cursor-pointer items-center gap-3 text-base">
             <Checkbox checked={giftFamily} onChange={(e) => setGiftFamily(e.target.checked)} />
             Include family plan (spouse and minor children)
           </label>
         </div>
       </Sheet>
-    </>
+    </PageShell>
   )
 }

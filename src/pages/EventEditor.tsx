@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Image, Plus, Save, Trash2, Users } from 'lucide-react'
+import { Image, Plus, Save, Trash2, Users } from 'lucide-react'
 import type { EventCost, TempleEvent } from '@/lib/data/types'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { BreakEvenMeter } from '@/components/shared/BreakEvenMeter'
 import { EventCard } from '@/components/shared/EventCard'
 import { StatusPill } from '@/components/shared/badges'
@@ -79,49 +79,39 @@ export default function EventEditor({ mode }: { mode: 'create' | 'edit' }) {
 
   if (mode === 'edit' && loading) {
     return (
-      <>
-        <PageHeader title="Edit event" subtitle="Loading…" />
+      <PageShell title="Edit event" description="Loading…">
         <LoadingSkeleton variant="table" rows={5} />
-      </>
+      </PageShell>
     )
   }
 
   if (mode === 'edit' && !data) {
     return (
-      <>
-        <PageHeader title="Event not found" />
+      <PageShell title="Event not found">
         <Link to="/events" className={buttonVariants({ size: 'sm' })}>
           Back to events
         </Link>
-      </>
+      </PageShell>
     )
   }
 
   return (
-    <>
-      <Link
-        to="/events"
-        className="mb-4 inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink"
-      >
-        <ArrowLeft className="size-3.5" />
-        All events
-      </Link>
-
-      <PageHeader
-        title={mode === 'create' ? 'New event' : `Edit ${data?.title}`}
-        subtitle="Everything here — including the cost breakdown — is visible to devotees."
-        actions={
-          <Button onClick={save} disabled={!form.title.trim()}>
-            <Save />
-            {mode === 'create' ? 'Create event' : 'Save changes'}
-          </Button>
-        }
-      />
-
+    <PageShell
+      eyebrow="Programme"
+      title={mode === 'create' ? 'New event' : `Edit ${data?.title}`}
+      description="Everything here — including the cost breakdown — is visible to devotees."
+      back={{ to: '/events', label: 'All events' }}
+      actions={
+        <Button onClick={save} disabled={!form.title.trim()}>
+          <Save />
+          {mode === 'create' ? 'Create event' : 'Save changes'}
+        </Button>
+      }
+    >
       <div className="grid gap-5 xl:grid-cols-[1.5fr_1fr] xl:items-start">
         <div className="space-y-5">
           <Card className="p-5">
-            <h2 className="font-serif text-[18px]">Basics</h2>
+            <h2 className="font-serif text-lg text-ink">Basics</h2>
             <div className="mt-3 grid gap-4">
               <Field label="Title" htmlFor="ev-title">
                 <Input
@@ -206,7 +196,7 @@ export default function EventEditor({ mode }: { mode: 'create' | 'edit' }) {
           </Card>
 
           <Card className="p-5">
-            <h2 className="font-serif text-[18px]">Money</h2>
+            <h2 className="font-serif text-lg text-ink">Money</h2>
             <div className="mt-3 grid gap-3 sm:grid-cols-3">
               <Field label="Target amount" htmlFor="ev-target">
                 <Input
@@ -242,8 +232,8 @@ export default function EventEditor({ mode }: { mode: 'create' | 'edit' }) {
 
           <Card className="p-5">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-serif text-[18px]">Cost line items</h2>
-              <span className="text-[13px] text-muted">{money(totalCost)} total direct cost</span>
+              <h2 className="font-serif text-lg text-ink">Cost line items</h2>
+              <span className="text-base text-muted">{money(totalCost)} total direct cost</span>
             </div>
             <ul className="mt-3 space-y-2">
               {form.costs.map((c, i) => (
@@ -288,7 +278,7 @@ export default function EventEditor({ mode }: { mode: 'create' | 'edit' }) {
               Add line item
             </Button>
             {totalCost > form.targetAmount ? (
-              <p className="mt-3 rounded-md border border-brand-500/30 bg-brand-500/[0.06] p-2.5 text-[12.5px] text-brand-600">
+              <p className="mt-3 rounded-md border border-brand-500/30 bg-brand-500/[0.06] p-2.5 text-sm text-brand-600">
                 Costs exceed the fundraising target by {money(totalCost - form.targetAmount)}. Raise
                 the target or trim a line item before publishing.
               </p>
@@ -296,16 +286,16 @@ export default function EventEditor({ mode }: { mode: 'create' | 'edit' }) {
           </Card>
         </div>
 
-        <div className="space-y-5 xl:sticky xl:top-6">
+        <div className="space-y-5 xl:sticky xl:top-[calc(var(--page-chrome-h,0px)+1.25rem)]">
           <Card className="p-5">
-            <h2 className="font-serif text-[18px]">Break-even</h2>
+            <h2 className="font-serif text-lg text-ink">Break-even</h2>
             <BreakEvenMeter
               className="mt-3"
               target={form.targetAmount}
               collected={form.collectedAmount}
               label="Raised vs target"
             />
-            <dl className="mt-4 space-y-2 border-t border-line pt-3 text-[13px]">
+            <dl className="mt-4 space-y-2 border-t border-line pt-3 text-base">
               <div className="flex justify-between gap-3">
                 <dt className="text-muted">Direct costs</dt>
                 <dd className="font-medium tabular-nums">{money(totalCost)}</dd>
@@ -335,21 +325,19 @@ export default function EventEditor({ mode }: { mode: 'create' | 'edit' }) {
           </Card>
 
           <div>
-            <p className="mb-2 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-muted">
-              Devotee preview
-            </p>
+            <p className="eyebrow mb-2">Devotee preview</p>
             <EventCard
               event={{ ...form, title: form.title || 'Untitled event' }}
               showMeter
               to="#"
             />
-            <p className="mt-2 text-[12px] leading-relaxed text-muted">
+            <p className="mt-2 text-sm leading-relaxed text-muted">
               This card is what appears on the devotee homepage and events index. Upcoming events
               also rotate through the homepage hero banner.
             </p>
           </div>
         </div>
       </div>
-    </>
+    </PageShell>
   )
 }

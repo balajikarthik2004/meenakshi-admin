@@ -1,11 +1,18 @@
 import { useState } from 'react'
 import { CreditCard, Mail, Plus, Save, Trash2 } from 'lucide-react'
 import type { Role, Staff, Temple } from '@/lib/data/types'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { RoleBadge } from '@/components/shared/badges'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Checkbox, Field, Input, Select, Textarea } from '@/components/ui/input'
 import { Tabs } from '@/components/ui/tabs'
 import { useToast } from '@/components/ui/toast'
@@ -59,19 +66,24 @@ export default function Settings() {
 
   const template = templates.find((t) => t.id === activeTemplate)!
 
+  const tabs = <Tabs items={TABS} value={tab} onChange={setTab} />
+
   return (
-    <>
-      <PageHeader
-        title="Settings"
-        subtitle="Every form here is functional but writes to local state only — nothing persists."
-      />
-
-      <Tabs items={TABS} value={tab} onChange={setTab} className="mb-5" />
-
+    <PageShell
+      tabs={tabs}
+      eyebrow="Programme"
+      title="Settings"
+      description="Every form here is functional but writes to local state only — nothing persists."
+    >
       {tab === 'temple' ? (
-        <Card className="max-w-3xl p-5">
-          <h2 className="font-serif text-[18px]">Temple profile</h2>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <Card className="max-w-3xl">
+          <CardHeader>
+            <CardTitle>Temple profile</CardTitle>
+            <CardDescription>
+              The address, hours and EIN printed on every receipt and shown on the devotee site.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
             <Field label="Name" htmlFor="tp-name" className="sm:col-span-2">
               <Input id="tp-name" value={temple.name} onChange={set('name')} />
             </Field>
@@ -137,11 +149,13 @@ export default function Settings() {
                 }
               />
             </Field>
-          </div>
-          <Button className="mt-5" onClick={() => saved('Temple profile')}>
-            <Save />
-            Save profile
-          </Button>
+          </CardContent>
+          <CardFooter className="justify-end">
+            <Button onClick={() => saved('Temple profile')}>
+              <Save />
+              Save profile
+            </Button>
+          </CardFooter>
         </Card>
       ) : null}
 
@@ -149,8 +163,8 @@ export default function Settings() {
         <Card className="max-w-3xl">
           <div className="flex items-center justify-between gap-3 border-b border-line p-5">
             <div>
-              <h2 className="font-serif text-[18px]">Priests &amp; staff</h2>
-              <p className="mt-0.5 text-[12.5px] text-muted">
+              <h2 className="font-serif text-lg text-ink">Priests &amp; staff</h2>
+              <p className="mt-0.5 text-sm text-muted">
                 Officiant names appear on every fulfilled occurrence and the archana roster.
               </p>
             </div>
@@ -227,24 +241,21 @@ export default function Settings() {
       ) : null}
 
       {tab === 'roles' ? (
-        <Card className="max-w-3xl p-5">
-          <h2 className="font-serif text-[18px]">Roles &amp; permissions</h2>
-          <p className="mt-0.5 text-[12.5px] text-muted">
-            The console enforces the board gate today; the rest of this matrix is the shape the real
-            build would honour.
-          </p>
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full border-collapse text-left text-[13.5px]">
+        <Card className="max-w-3xl">
+          <CardHeader>
+            <CardTitle>Roles &amp; permissions</CardTitle>
+            <CardDescription>
+              The console enforces the board gate today; the rest of this matrix is the shape the
+              real build would honour.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full border-collapse text-left text-base">
               <thead>
                 <tr className="border-b border-line">
-                  <th className="py-2 text-[11.5px] font-semibold uppercase tracking-[0.07em] text-muted">
-                    Capability
-                  </th>
+                  <th className="eyebrow py-2 text-left">Capability</th>
                   {(['admin', 'priest', 'board'] as const).map((r) => (
-                    <th
-                      key={r}
-                      className="py-2 text-center text-[11.5px] font-semibold uppercase tracking-[0.07em] text-muted"
-                    >
+                    <th key={r} className="eyebrow py-2 text-center">
                       {r}
                     </th>
                   ))}
@@ -272,44 +283,54 @@ export default function Settings() {
                 ))}
               </tbody>
             </table>
-          </div>
-          <Button className="mt-5" onClick={() => saved('Permission matrix')}>
-            <Save />
-            Save permissions
-          </Button>
+          </CardContent>
+          <CardFooter className="justify-end">
+            <Button onClick={() => saved('Permission matrix')}>
+              <Save />
+              Save permissions
+            </Button>
+          </CardFooter>
         </Card>
       ) : null}
 
       {tab === 'payments' ? (
-        <Card className="max-w-2xl p-5">
-          <h2 className="font-serif text-[18px]">Payment methods</h2>
-          <p className="mt-0.5 text-[12.5px] text-muted">
-            Placeholder — the prototype contacts no payment processor.
-          </p>
-          <ul className="mt-4 space-y-2">
-            {[
-              { label: 'Card processing', detail: 'Stripe — not connected', badge: 'Placeholder' },
-              {
-                label: 'ACH / bank transfer',
-                detail: 'Direct deposit to operating account',
-                badge: 'Placeholder',
-              },
-              { label: 'Zelle', detail: 'give@smdpearland.org', badge: 'Manual' },
-              { label: 'Check & cash', detail: 'Entered by the office desk', badge: 'Manual' },
-            ].map((m) => (
-              <li
-                key={m.label}
-                className="flex items-center gap-3 rounded-[10px] border border-line p-3.5"
-              >
-                <CreditCard className="size-5 shrink-0 text-muted" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[13.5px] font-medium">{m.label}</p>
-                  <p className="text-[12.5px] text-muted">{m.detail}</p>
-                </div>
-                <Badge variant="neutral">{m.badge}</Badge>
-              </li>
-            ))}
-          </ul>
+        <Card className="max-w-2xl">
+          <CardHeader>
+            <CardTitle>Payment methods</CardTitle>
+            <CardDescription>
+              Placeholder — the prototype contacts no payment processor.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {[
+                {
+                  label: 'Card processing',
+                  detail: 'Stripe — not connected',
+                  badge: 'Placeholder',
+                },
+                {
+                  label: 'ACH / bank transfer',
+                  detail: 'Direct deposit to operating account',
+                  badge: 'Placeholder',
+                },
+                { label: 'Zelle', detail: 'give@smdpearland.org', badge: 'Manual' },
+                { label: 'Check & cash', detail: 'Entered by the office desk', badge: 'Manual' },
+              ].map((m) => (
+                <li
+                  key={m.label}
+                  className="flex items-center gap-3 rounded-[var(--radius-lg)] border border-line p-3.5"
+                >
+                  <CreditCard className="size-5 shrink-0 text-muted" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-base font-medium">{m.label}</p>
+                    <p className="text-sm text-muted">{m.detail}</p>
+                  </div>
+                  <Badge variant="neutral">{m.badge}</Badge>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
         </Card>
       ) : null}
 
@@ -322,7 +343,7 @@ export default function Settings() {
                   <button
                     type="button"
                     onClick={() => setActiveTemplate(t.id)}
-                    className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-[13px] transition-colors ${
+                    className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-base transition-colors ${
                       t.id === activeTemplate
                         ? 'bg-brand-500/[0.09] font-medium text-brand-600'
                         : 'text-muted hover:bg-tint hover:text-ink'
@@ -337,7 +358,7 @@ export default function Settings() {
           </Card>
 
           <Card className="p-5">
-            <h2 className="font-serif text-[18px]">{template.name}</h2>
+            <h2 className="font-serif text-lg text-ink">{template.name}</h2>
             <div className="mt-4 grid gap-4">
               <Field label="Subject line" htmlFor="et-subject">
                 <Input
@@ -361,7 +382,7 @@ export default function Settings() {
                   id="et-body"
                   rows={10}
                   value={template.body}
-                  className="font-mono text-[12.5px]"
+                  className="font-mono text-sm"
                   onChange={(e) =>
                     setTemplates((all) =>
                       all.map((t) => (t.id === template.id ? { ...t, body: e.target.value } : t)),
@@ -377,6 +398,6 @@ export default function Settings() {
           </Card>
         </div>
       ) : null}
-    </>
+    </PageShell>
   )
 }

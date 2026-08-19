@@ -41,8 +41,33 @@ export function fmtRelative(d: string | Date) {
 
 export const pct = (n: number) => `${Math.round(n)}%`
 
+/**
+ * Acronyms that must not be sentence-cased. `titleCase` is what turns a stored enum
+ * into a column value, and the donation ledger was printing the payment method of a
+ * bank transfer as "Ach" in every row — a small thing that tells a treasurer the
+ * console was not written by anyone who works with the ledger.
+ */
+const ACRONYMS = new Set([
+  'ach',
+  'agm',
+  'csv',
+  'ein',
+  'id',
+  'irs',
+  'pan',
+  'pdf',
+  'sms',
+  'ssn',
+  'usd',
+  'zip',
+])
+
 export const titleCase = (s: string) =>
-  s.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+  s
+    .replace(/[-_]/g, ' ')
+    .replace(/\b[\w']+/g, (w) =>
+      ACRONYMS.has(w.toLowerCase()) ? w.toUpperCase() : w.charAt(0).toUpperCase() + w.slice(1),
+    )
 
 /** Escapes a value for CSV export (used by the devotee and admin download buttons). */
 function csvCell(v: unknown) {

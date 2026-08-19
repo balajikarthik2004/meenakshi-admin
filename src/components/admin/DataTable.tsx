@@ -84,7 +84,7 @@ export function DataTable<T>({
 
   return (
     <div className={cn('space-y-3', className)}>
-      <TableWrap>
+      <TableWrap scroll>
         <Table>
           <THead>
             <TR>
@@ -101,8 +101,14 @@ export function DataTable<T>({
                     <button
                       type="button"
                       onClick={() => toggle(c.key)}
+                      // `uppercase` and the tracking are repeated here on purpose. The
+                      // browser's own stylesheet sets `text-transform: none` on
+                      // `button`, which beats the `uppercase` inherited from the `th` —
+                      // so every sortable heading in the console rendered in sentence
+                      // case beside its unsortable neighbours in caps. One table, two
+                      // header styles, decided by whether the column happened to sort.
                       className={cn(
-                        'inline-flex items-center gap-1 transition-colors hover:text-ink',
+                        'inline-flex items-center gap-1 uppercase tracking-[0.1em] transition-colors hover:text-ink',
                         sortKey === c.key && 'text-brand-600',
                       )}
                     >
@@ -129,13 +135,15 @@ export function DataTable<T>({
               <TR
                 key={rowKey(row)}
                 onClick={onRowClick ? () => onRowClick(row) : undefined}
-                className={cn('hover:bg-tint/50', onRowClick && 'cursor-pointer')}
+                className={cn(onRowClick && 'cursor-pointer')}
               >
                 {columns.map((c) => (
                   <TD
                     key={c.key}
                     className={cn(
-                      c.align === 'right' && 'text-right',
+                      // A right-aligned column is a figure column: give it tabular
+                      // digits and full ink, so amounts compare down the page.
+                      c.align === 'right' && 'text-right font-medium tabular-nums text-ink',
                       c.align === 'center' && 'text-center',
                       c.className,
                     )}
@@ -149,10 +157,13 @@ export function DataTable<T>({
         </Table>
       </TableWrap>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-muted">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-1 text-sm text-muted">
         <p>
-          Showing {current * pageSize + 1}–{Math.min(sorted.length, (current + 1) * pageSize)} of{' '}
-          {sorted.length}
+          Showing{' '}
+          <span className="tabular-nums font-bold text-ink">
+            {current * pageSize + 1}–{Math.min(sorted.length, (current + 1) * pageSize)}
+          </span>{' '}
+          of <span className="tabular-nums font-bold text-ink">{sorted.length}</span>
         </p>
         {pageCount > 1 ? (
           <div className="flex items-center gap-2">
@@ -164,7 +175,7 @@ export function DataTable<T>({
             >
               Previous
             </Button>
-            <span className="tabular-nums">
+            <span className="tabular-nums font-semibold text-ink-soft">
               {current + 1} / {pageCount}
             </span>
             <Button

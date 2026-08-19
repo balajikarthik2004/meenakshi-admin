@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Check, X } from 'lucide-react'
 import type { FacilityBooking, User } from '@/lib/data/types'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { DataTable, type Column } from '@/components/admin/DataTable'
 import { StatTile } from '@/components/shared/StatTile'
 import { StatusPill } from '@/components/shared/badges'
@@ -81,7 +81,7 @@ export default function FacilityAdmin() {
       cell: (r) => (
         <div className="min-w-0">
           <p className="truncate">{r.user?.name ?? 'Unknown'}</p>
-          <p className="truncate text-[12px] text-muted">{r.user?.phone}</p>
+          <p className="truncate text-sm text-muted">{r.user?.phone}</p>
         </div>
       ),
     },
@@ -128,12 +128,12 @@ export default function FacilityAdmin() {
   ]
 
   return (
-    <>
-      <PageHeader
-        title="Facility bookings"
-        subtitle="Hall, mini-hall and canteen requests from devotees."
-      />
-
+    <PageShell
+      toolbar={<Chips items={FILTERS} value={filter} onChange={setFilter} />}
+      eyebrow="Programme"
+      title="Facility bookings"
+      description="Hall, mini-hall and canteen requests from devotees."
+    >
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Requests" value={all.length} sub="All time" />
         <StatTile
@@ -155,8 +155,6 @@ export default function FacilityAdmin() {
           tone="gold"
         />
       </div>
-
-      <Chips items={FILTERS} value={filter} onChange={setFilter} className="mb-4" />
 
       {loading ? (
         <LoadingSkeleton variant="table" rows={6} />
@@ -203,7 +201,7 @@ export default function FacilityAdmin() {
       >
         {detail ? (
           <div className="space-y-5">
-            <dl className="divide-y divide-line text-[13.5px]">
+            <dl className="divide-y divide-line text-base">
               {[
                 ['Devotee', detail.user?.name ?? '—'],
                 ['Phone', detail.user?.phone ?? '—'],
@@ -226,17 +224,15 @@ export default function FacilityAdmin() {
             </dl>
 
             <div>
-              <p className="mb-2 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-muted">
-                Requested add-ons
-              </p>
+              <p className="eyebrow mb-2">Requested add-ons</p>
               {detail.booking.items.length === 0 ? (
-                <p className="text-[13px] text-muted">Room only — no extras requested.</p>
+                <p className="text-base text-muted">Room only — no extras requested.</p>
               ) : (
-                <ul className="divide-y divide-line rounded-[10px] border border-line">
+                <ul className="divide-y divide-line rounded-[var(--radius-lg)] border border-line">
                   {detail.booking.items.map((it) => (
                     <li
                       key={it.label}
-                      className="flex items-center justify-between gap-3 p-3 text-[13px]"
+                      className="flex items-center justify-between gap-3 p-3 text-base"
                     >
                       <span>
                         {it.label}
@@ -250,14 +246,12 @@ export default function FacilityAdmin() {
             </div>
 
             <div className="flex items-baseline justify-between gap-3 border-t border-line pt-3">
-              <span className="text-[13.5px] font-medium">Total</span>
-              <span className="font-serif text-[24px] tabular-nums">
-                {money(detail.booking.total)}
-              </span>
+              <span className="text-base font-medium">Total</span>
+              <span className="font-bold text-2xl tabular-nums">{money(detail.booking.total)}</span>
             </div>
           </div>
         ) : null}
       </Sheet>
-    </>
+    </PageShell>
   )
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FileDown, Printer, Scale, Target, TrendingUp, Wallet } from 'lucide-react'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { PnLTable } from '@/components/admin/PnLTable'
 import { PrintableAgmReport } from '@/components/admin/PrintableAgmReport'
 import { BreakEvenMeter } from '@/components/shared/BreakEvenMeter'
@@ -30,10 +30,9 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
 
   if (loading || !data) {
     return (
-      <>
-        <PageHeader title="Transparency" subtitle="Loading the ledger…" />
+      <PageShell title="Transparency" description="Loading the ledger…">
         <LoadingSkeleton variant="tiles" rows={4} />
-      </>
+      </PageShell>
     )
   }
 
@@ -44,22 +43,21 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
     .slice(0, 10)
 
   return (
-    <>
-      <PageHeader
-        title={readOnly ? 'Board strategic view' : 'Transparency dashboard'}
-        subtitle={
-          readOnly
-            ? 'Read-only. Figures match the operational dashboard exactly — no separate books.'
-            : `Every dollar in and out. Updated ${fmtDate(snapshot.updatedAt, "MMM d 'at' h:mm a")}.`
-        }
-        actions={
-          <Button onClick={() => setPrinting(true)}>
-            {readOnly ? <Printer /> : <FileDown />}
-            {readOnly ? 'Print for AGM' : 'Export PDF'}
-          </Button>
-        }
-      />
-
+    <PageShell
+      eyebrow="Money"
+      title={readOnly ? 'Board strategic view' : 'Transparency dashboard'}
+      description={
+        readOnly
+          ? 'Read-only. Figures match the operational dashboard exactly — no separate books.'
+          : `Every dollar in and out. Updated ${fmtDate(snapshot.updatedAt, "MMM d 'at' h:mm a")}.`
+      }
+      actions={
+        <Button onClick={() => setPrinting(true)}>
+          {readOnly ? <Printer /> : <FileDown />}
+          {readOnly ? 'Print for AGM' : 'Export PDF'}
+        </Button>
+      }
+    >
       {/* Row 1 — the four numbers that carry the story */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile
@@ -98,7 +96,7 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
           collected={snapshot.ytdCollected}
           label="Annual operating position"
         />
-        <p className="mt-3 text-[12.5px] leading-relaxed text-muted">
+        <p className="mt-3 text-sm leading-relaxed text-muted">
           The same three figures are published on the devotee homepage. There is one ledger and one
           set of numbers — what the board sees here is what a devotee sees there.
         </p>
@@ -107,8 +105,8 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
       {/* Puja P&L */}
       <section className="mt-6">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-serif text-[20px]">Puja profit &amp; loss</h2>
-          <p className="text-[12.5px] text-muted">
+          <h2 className="font-serif text-lg text-ink">Puja profit &amp; loss</h2>
+          <p className="text-sm text-muted">
             Direct cost only — flowers, dravyam, priest honorarium and prasadam.
           </p>
         </div>
@@ -117,14 +115,14 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
 
       {/* Event break-even */}
       <section className="mt-6">
-        <h2 className="mb-3 font-serif text-[20px]">Festival break-even</h2>
+        <h2 className="mb-3 font-serif text-lg text-ink">Festival break-even</h2>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {meterEvents.map((e) => (
             <Card key={e.id} className="p-4">
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate text-[14px] font-medium text-ink">{e.title}</p>
-                  <p className="text-[12px] text-muted">{fmtDate(e.date, 'MMM d, yyyy')}</p>
+                  <p className="truncate text-base font-medium text-ink">{e.title}</p>
+                  <p className="text-sm text-muted">{fmtDate(e.date, 'MMM d, yyyy')}</p>
                 </div>
                 <StatusPill status={e.status} />
               </div>
@@ -141,14 +139,14 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
 
       {/* Projects */}
       <section className="mt-6">
-        <h2 className="mb-3 font-serif text-[20px]">Capital projects</h2>
+        <h2 className="mb-3 font-serif text-lg text-ink">Capital projects</h2>
         <div className="grid gap-4 lg:grid-cols-2">
           {projects.map((p) => (
             <Card key={p.id}>
               <CardHeader className="flex-row items-start justify-between">
                 <div className="min-w-0">
                   <CardTitle>{p.title}</CardTitle>
-                  <p className="mt-0.5 text-[12.5px] text-muted">
+                  <p className="mt-0.5 text-sm text-muted">
                     {money(p.raisedAmount)} raised · {money(p.spentAmount)} spent ·{' '}
                     {money(p.targetAmount)} target
                   </p>
@@ -161,10 +159,10 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
                   label={`${p.title} — ${p.progressPct}% complete`}
                   tone={p.status === 'completed' ? 'leaf' : p.progressPct > 50 ? 'gold' : 'brand'}
                 />
-                <p className="mt-1.5 text-[12px] text-muted">{pct(p.progressPct)} complete</p>
+                <p className="mt-1.5 text-sm text-muted">{pct(p.progressPct)} complete</p>
                 <ul className="mt-3 space-y-1.5 border-t border-line pt-3">
                   {p.notes.map((n, i) => (
-                    <li key={i} className="flex gap-2 text-[12.5px] leading-relaxed text-muted">
+                    <li key={i} className="flex gap-2 text-sm leading-relaxed text-muted">
                       <span className="mt-1.5 size-1 shrink-0 rounded-full bg-brand-300" />
                       {n}
                     </li>
@@ -201,6 +199,6 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
           projects={projects}
         />
       </Dialog>
-    </>
+    </PageShell>
   )
 }

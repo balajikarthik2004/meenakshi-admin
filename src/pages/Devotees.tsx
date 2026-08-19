@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Download, Users } from 'lucide-react'
 import type { MembershipTier, User } from '@/lib/data/types'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { DataTable, type Column } from '@/components/admin/DataTable'
 import { TierBadge } from '@/components/shared/badges'
 import { LoadingSkeleton } from '@/components/shared/states'
@@ -96,10 +96,10 @@ export default function Devotees() {
       sortValue: (r) => r.user.name,
       cell: (r) => (
         <div className="flex items-center gap-2.5">
-          <Avatar initials={r.user.avatarInitials} className="size-7 text-[10.5px]" />
+          <Avatar initials={r.user.avatarInitials} className="size-7 text-2xs" />
           <div className="min-w-0 leading-tight">
             <p className="truncate font-medium text-ink">{r.user.name}</p>
-            <p className="truncate text-[11.5px] text-muted">{r.user.email}</p>
+            <p className="truncate text-xs text-muted">{r.user.email}</p>
           </div>
         </div>
       ),
@@ -158,66 +158,68 @@ export default function Devotees() {
       })),
     )
 
-  return (
-    <>
-      <PageHeader
-        title="Devotees"
-        subtitle={`${rows.length} on the register${loading ? '' : ` · ${money(rows.reduce((s, r) => s + r.contributions, 0))} lifetime donations`}`}
-        actions={
-          <Button variant="ghost" size="sm" onClick={exportCSV} disabled={rows.length === 0}>
-            <Download />
-            Export CSV
-          </Button>
-        }
-      />
-
-      <Toolbar
-        search={search}
-        onSearch={setSearch}
-        searchPlaceholder="Search name, phone or email"
-        activeCount={[tier, city, joined !== 'all' ? joined : '', search].filter(Boolean).length}
-        onClear={() => {
-          setSearch('')
-          setTier('')
-          setCity('')
-          setJoined('all')
-        }}
+  const toolbar = (
+    <Toolbar
+      search={search}
+      onSearch={setSearch}
+      searchPlaceholder="Search name, phone or email"
+      activeCount={[tier, city, joined !== 'all' ? joined : '', search].filter(Boolean).length}
+      onClear={() => {
+        setSearch('')
+        setTier('')
+        setCity('')
+        setJoined('all')
+      }}
+    >
+      <ToolbarSelect
+        value={tier}
+        onChange={(e) => setTier(e.target.value)}
+        aria-label="Filter by tier"
       >
-        <ToolbarSelect
-          value={tier}
-          onChange={(e) => setTier(e.target.value)}
-          aria-label="Filter by tier"
-        >
-          <option value="">All tiers</option>
-          <option value="silver">Silver</option>
-          <option value="gold">Gold</option>
-          <option value="platinum">Platinum</option>
-        </ToolbarSelect>
-        <ToolbarSelect
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          aria-label="Filter by city"
-        >
-          <option value="">All cities</option>
-          {CITIES.map((c) => (
-            <option key={c.city} value={c.city}>
-              {c.city}
-            </option>
-          ))}
-        </ToolbarSelect>
-        <ToolbarSelect
-          value={joined}
-          onChange={(e) => setJoined(e.target.value)}
-          aria-label="Filter by join date"
-        >
-          {JOINED_RANGES.map((r) => (
-            <option key={r.key} value={r.key}>
-              {r.label}
-            </option>
-          ))}
-        </ToolbarSelect>
-      </Toolbar>
+        <option value="">All tiers</option>
+        <option value="silver">Silver</option>
+        <option value="gold">Gold</option>
+        <option value="platinum">Platinum</option>
+      </ToolbarSelect>
+      <ToolbarSelect
+        value={city}
+        onChange={(e) => setCity(e.target.value)}
+        aria-label="Filter by city"
+      >
+        <option value="">All cities</option>
+        {CITIES.map((c) => (
+          <option key={c.city} value={c.city}>
+            {c.city}
+          </option>
+        ))}
+      </ToolbarSelect>
+      <ToolbarSelect
+        value={joined}
+        onChange={(e) => setJoined(e.target.value)}
+        aria-label="Filter by join date"
+      >
+        {JOINED_RANGES.map((r) => (
+          <option key={r.key} value={r.key}>
+            {r.label}
+          </option>
+        ))}
+      </ToolbarSelect>
+    </Toolbar>
+  )
 
+  return (
+    <PageShell
+      toolbar={toolbar}
+      eyebrow="People"
+      title="Devotees"
+      description={`${rows.length} on the register${loading ? '' : ` · ${money(rows.reduce((s, r) => s + r.contributions, 0))} lifetime donations`}`}
+      actions={
+        <Button variant="ghost" size="sm" onClick={exportCSV} disabled={rows.length === 0}>
+          <Download />
+          Export CSV
+        </Button>
+      }
+    >
       {loading ? (
         <LoadingSkeleton variant="table" rows={8} />
       ) : (
@@ -235,11 +237,11 @@ export default function Devotees() {
       )}
 
       {!loading && rows.length > 0 ? (
-        <p className="mt-3 flex items-center gap-1.5 text-[12.5px] text-muted">
+        <p className="mt-3 flex items-center gap-1.5 text-sm text-muted">
           <Users className="size-3.5" />
           Click any row to open the full devotee record.
         </p>
       ) : null}
-    </>
+    </PageShell>
   )
 }

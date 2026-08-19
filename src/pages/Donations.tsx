@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Download, FileCheck2, Landmark, Wand2 } from 'lucide-react'
 import type { Donation, User } from '@/lib/data/types'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { DataTable, type Column } from '@/components/admin/DataTable'
 import { StatTile } from '@/components/shared/StatTile'
 import { LoadingSkeleton } from '@/components/shared/states'
@@ -180,11 +180,18 @@ export default function Donations() {
     },
     {
       key: 'receipt',
-      header: 'Receipt sent',
+      header: 'Receipt',
       sortValue: (r) => (r.donation.taxReceiptId ? 'y' : 'n'),
       align: 'center',
+      // "Y" and "N" in a pill made the reader decode a legend that was never printed —
+      // and the two states are not equivalent: a missing receipt is work outstanding,
+      // which is the whole reason this column is on the page.
       cell: (r) =>
-        r.donation.taxReceiptId ? <Badge variant="leaf">Y</Badge> : <Badge variant="gold">N</Badge>,
+        r.donation.taxReceiptId ? (
+          <Badge variant="leaf">Sent</Badge>
+        ) : (
+          <Badge variant="gold">Pending</Badge>
+        ),
     },
     {
       key: 'amount',
@@ -210,34 +217,83 @@ export default function Donations() {
       })),
     )
 
-  return (
-    <>
-      <PageHeader
-        title="Donation ledger"
-        subtitle={`${rows.length} entries · ${money(total)} recorded`}
-        actions={
-          <>
-            <Button variant="ghost" size="sm" onClick={() => setReconciling(true)}>
-              <Landmark />
-              Reconcile bank
-            </Button>
-            <Button variant="ghost" size="sm" onClick={exportCSV} disabled={rows.length === 0}>
-              <Download />
-              Export CSV
-            </Button>
-            <Button
-              size="sm"
-              onClick={generateReceipts}
-              disabled={pendingReceipts === 0 && selected.size === 0}
-            >
-              <FileCheck2 />
-              Generate tax receipts
-              {selected.size > 0 ? ` (${selected.size})` : ''}
-            </Button>
-          </>
-        }
-      />
+  const toolbar = (
+    <Toolbar
+      activeCount={[category, method, receipt, from, to].filter(Boolean).length}
+      onClear={() => {
+        setCategory('')
+        setMethod('')
+        setReceipt('')
+        setFrom('')
+        setTo('')
+      }}
+    >
+      <ToolbarSelect
+        value={category}
+        onChange={(e) => setCategory(e.target.value)}
+        aria-label="Filter by fund"
+      >
+        <option value="">All funds</option>
+        {DONATION_CATEGORIES.map((c) => (
+          <option key={c.key} value={c.key}>
+            {c.label}
+          </option>
+        ))}
+      </ToolbarSelect>
+      <ToolbarSelect
+        value={method}
+        onChange={(e) => setMethod(e.target.value)}
+        aria-label="Filter by method"
+      >
+        <option value="">All methods</option>
+        {METHODS.map((m) => (
+          <option key={m} value={m}>
+            {titleCase(m)}
+          </option>
+        ))}
+      </ToolbarSelect>
+      <ToolbarSelect
+        value={receipt}
+        onChange={(e) => setReceipt(e.target.value)}
+        aria-label="Filter by receipt status"
+      >
+        <option value="">Any receipt status</option>
+        <option value="sent">Receipt sent</option>
+        <option value="pending">Receipt pending</option>
+      </ToolbarSelect>
+      <ToolbarDate label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
+      <ToolbarDate label="To" value={to} onChange={(e) => setTo(e.target.value)} />
+    </Toolbar>
+  )
 
+  return (
+    <PageShell
+      toolbar={toolbar}
+      eyebrow="Money"
+      title="Donation ledger"
+      description={`${rows.length} entries · ${money(total)} recorded`}
+      actions={
+        <>
+          <Button variant="ghost" size="sm" onClick={() => setReconciling(true)}>
+            <Landmark />
+            Reconcile bank
+          </Button>
+          <Button variant="ghost" size="sm" onClick={exportCSV} disabled={rows.length === 0}>
+            <Download />
+            Export CSV
+          </Button>
+          <Button
+            size="sm"
+            onClick={generateReceipts}
+            disabled={pendingReceipts === 0 && selected.size === 0}
+          >
+            <FileCheck2 />
+            Generate tax receipts
+            {selected.size > 0 ? ` (${selected.size})` : ''}
+          </Button>
+        </>
+      }
+    >
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile
           label="Filtered total"
@@ -263,53 +319,6 @@ export default function Donations() {
           tone="brand"
         />
       </div>
-
-      <Toolbar
-        activeCount={[category, method, receipt, from, to].filter(Boolean).length}
-        onClear={() => {
-          setCategory('')
-          setMethod('')
-          setReceipt('')
-          setFrom('')
-          setTo('')
-        }}
-      >
-        <ToolbarSelect
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          aria-label="Filter by fund"
-        >
-          <option value="">All funds</option>
-          {DONATION_CATEGORIES.map((c) => (
-            <option key={c.key} value={c.key}>
-              {c.label}
-            </option>
-          ))}
-        </ToolbarSelect>
-        <ToolbarSelect
-          value={method}
-          onChange={(e) => setMethod(e.target.value)}
-          aria-label="Filter by method"
-        >
-          <option value="">All methods</option>
-          {METHODS.map((m) => (
-            <option key={m} value={m}>
-              {titleCase(m)}
-            </option>
-          ))}
-        </ToolbarSelect>
-        <ToolbarSelect
-          value={receipt}
-          onChange={(e) => setReceipt(e.target.value)}
-          aria-label="Filter by receipt status"
-        >
-          <option value="">Any receipt status</option>
-          <option value="sent">Receipt sent</option>
-          <option value="pending">Receipt pending</option>
-        </ToolbarSelect>
-        <ToolbarDate label="From" value={from} onChange={(e) => setFrom(e.target.value)} />
-        <ToolbarDate label="To" value={to} onChange={(e) => setTo(e.target.value)} />
-      </Toolbar>
 
       {loading ? (
         <LoadingSkeleton variant="table" rows={10} />
@@ -348,21 +357,21 @@ export default function Donations() {
           rows={8}
           value={statement}
           onChange={(e) => setStatement(e.target.value)}
-          className="font-mono text-[12px]"
+          className="font-mono text-sm"
           aria-label="Bank statement lines"
         />
 
         {matches ? (
           <div className="mt-4">
-            <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
+            <p className="eyebrow mb-2">
               Match results — {matches.filter((m) => m.matched).length} of {matches.length} matched
             </p>
             <ul className="space-y-2">
               {matches.map((m, i) => (
-                <li key={i} className="rounded-[10px] border border-line p-3">
-                  <p className="font-mono text-[11.5px] text-muted">{m.line}</p>
+                <li key={i} className="rounded-[var(--radius-lg)] border border-line p-3">
+                  <p className="font-mono text-xs text-muted">{m.line}</p>
                   {m.matched ? (
-                    <p className="mt-1.5 flex flex-wrap items-center gap-2 text-[13px]">
+                    <p className="mt-1.5 flex flex-wrap items-center gap-2 text-base">
                       <Badge variant="leaf">Matched</Badge>
                       <span className="font-medium">{m.donor?.name ?? 'Anonymous'}</span>
                       <span className="text-muted">
@@ -371,7 +380,7 @@ export default function Donations() {
                       </span>
                     </p>
                   ) : (
-                    <p className="mt-1.5 flex items-center gap-2 text-[13px]">
+                    <p className="mt-1.5 flex items-center gap-2 text-base">
                       <Badge variant="brand">Unmatched</Badge>
                       <span className="text-muted">
                         No ledger entry for {money(m.amount)} — needs manual entry.
@@ -381,13 +390,13 @@ export default function Donations() {
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-[12px] italic text-muted">
+            <p className="mt-3 text-sm italic text-muted">
               Prototype matching is amount-only. The real build would match on payer name, date
               window and reference number.
             </p>
           </div>
         ) : null}
       </Sheet>
-    </>
+    </PageShell>
   )
 }

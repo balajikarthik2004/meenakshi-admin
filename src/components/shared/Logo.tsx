@@ -73,9 +73,9 @@ export function LogoWordmark({ compact = false }: { compact?: boolean }) {
     <span className="flex items-center gap-2.5">
       <Logo size={compact ? 30 : 40} />
       <span className="min-w-0 leading-tight">
-        <span className="block truncate font-serif text-[17px] text-brand-600">Sri Meenakshi</span>
+        <span className="wordmark block truncate text-lg text-brand-600">Sri Meenakshi</span>
         {!compact && (
-          <span className="block text-[10px] uppercase tracking-[0.18em] text-muted">
+          <span className="block text-2xs uppercase tracking-[0.18em] text-muted">
             Devasthanam · Pearland
           </span>
         )}

@@ -2,18 +2,22 @@ import * as React from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 
+/**
+ * Status pills. Held deliberately quiet — in a table of forty rows the badge is a
+ * label, not a highlight, so the tint stays low and the text carries the weight.
+ */
 const badgeVariants = cva(
-  'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11.5px] font-medium leading-5 whitespace-nowrap',
+  'inline-flex items-center gap-1 rounded-full border px-2 py-px text-xs font-semibold leading-[18px] tracking-[0.005em] whitespace-nowrap',
   {
     variants: {
       variant: {
-        default: 'border-line bg-tint text-brand-700',
+        default: 'border-line bg-tint text-ink-soft',
         neutral: 'border-line bg-bg text-muted',
-        brand: 'border-brand-500/25 bg-brand-500/10 text-brand-600',
-        gold: 'border-gold-500/35 bg-gold-500/15 text-gold-600',
-        leaf: 'border-leaf-500/25 bg-leaf-500/12 text-leaf-600',
-        outline: 'border-line bg-card text-ink',
-        solid: 'border-transparent bg-brand-500 text-white',
+        brand: 'border-brand-500/25 bg-brand-500/[0.08] text-brand-600',
+        gold: 'border-saffron-500/30 bg-saffron-500/[0.12] text-saffron-600',
+        leaf: 'border-leaf-500/28 bg-leaf-500/[0.1] text-leaf-600',
+        outline: 'border-line bg-card text-ink-soft',
+        solid: 'border-brand-500 bg-brand-500 text-white',
       },
     },
     defaultVariants: { variant: 'default' },
@@ -35,9 +39,13 @@ export const Separator = ({ className, vertical }: { className?: string; vertica
 )
 
 export const Skeleton = ({ className }: { className?: string }) => (
-  <div className={cn('animate-pulse rounded-md bg-line/70', className)} />
+  <div className={cn('animate-pulse rounded-[6px] bg-line/60', className)} />
 )
 
+/**
+ * Initials avatar. A soft inner highlight and a ring of the same hue lift it off the
+ * page — a flat disc of maroon beside cream paper reads as a printing error.
+ */
 export const Avatar = ({
   initials,
   className,
@@ -49,7 +57,8 @@ export const Avatar = ({
 }) => (
   <span
     className={cn(
-      'inline-flex size-9 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold text-white',
+      'inline-grid size-9 shrink-0 place-items-center rounded-full text-sm font-bold tracking-[0.02em] text-white',
+      'shadow-[var(--shadow-xs)]',
       tone === 'brand' && 'bg-brand-500',
       tone === 'gold' && 'bg-gold-500',
       tone === 'leaf' && 'bg-leaf-500',
@@ -79,7 +88,7 @@ export const Progress = ({
     aria-valuemin={0}
     aria-valuemax={100}
     aria-valuetext={`${Math.round(value)}%`}
-    className={cn('h-2 w-full overflow-hidden rounded-full bg-line/80', className)}
+    className={cn('h-1.5 w-full overflow-hidden rounded-full bg-line', className)}
   >
     <div
       className={cn(

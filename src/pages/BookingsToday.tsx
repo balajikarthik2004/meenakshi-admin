@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { TodaysArchanaList, type ArchanaRow } from '@/components/admin/TodaysArchanaList'
 import { StatTile } from '@/components/shared/StatTile'
 import { LoadingSkeleton } from '@/components/shared/states'
@@ -61,35 +61,29 @@ export default function BookingsToday() {
   const isToday = date.toDateString() === new Date().toDateString()
 
   return (
-    <>
-      <PageHeader
-        title={isToday ? 'Today’s pujas' : 'Puja roster'}
-        subtitle={fmtDate(date, 'EEEE, MMMM d, yyyy')}
-        actions={
-          <div className="flex items-center gap-1.5">
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Previous day"
-              onClick={() => shift(-1)}
-            >
-              <ChevronLeft />
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDate(new Date())}
-              disabled={isToday}
-            >
-              Today
-            </Button>
-            <Button variant="outline" size="icon" aria-label="Next day" onClick={() => shift(1)}>
-              <ChevronRight />
-            </Button>
-          </div>
-        }
-      />
-
+    <PageShell
+      eyebrow="Operations"
+      title={isToday ? 'Today’s pujas' : 'Puja roster'}
+      description={fmtDate(date, 'EEEE, MMMM d, yyyy')}
+      actions={
+        <div className="flex items-center gap-1.5">
+          <Button variant="outline" size="icon" aria-label="Previous day" onClick={() => shift(-1)}>
+            <ChevronLeft />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setDate(new Date())}
+            disabled={isToday}
+          >
+            Today
+          </Button>
+          <Button variant="outline" size="icon" aria-label="Next day" onClick={() => shift(1)}>
+            <ChevronRight />
+          </Button>
+        </div>
+      }
+    >
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="On the roster" value={rows.length} sub="Sponsored occurrences" />
         <StatTile label="Still to perform" value={pending} sub="Awaiting the priest" tone="brand" />
@@ -102,6 +96,6 @@ export default function BookingsToday() {
       ) : (
         <TodaysArchanaList rows={rows} onComplete={complete} onSkip={skip} date={date} />
       )}
-    </>
+    </PageShell>
   )
 }

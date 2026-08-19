@@ -42,7 +42,7 @@ export function PnLTable({ rows, className }: { rows: PujaPnLRow[]; className?: 
               <TR key={r.puja.id} className="hover:bg-tint/40">
                 <TD>
                   <p className="font-medium text-ink">{r.puja.name}</p>
-                  <p className="text-[12px] text-muted">
+                  <p className="text-sm text-muted">
                     {r.puja.deity} · {titleCase(r.puja.type)}
                   </p>
                 </TD>
@@ -65,7 +65,7 @@ export function PnLTable({ rows, className }: { rows: PujaPnLRow[]; className?: 
                       <span
                         className={cn(
                           'block h-full rounded-full',
-                          healthy ? 'bg-leaf-500' : thin ? 'bg-saffron-400' : 'bg-brand-500',
+                          healthy ? 'bg-leaf-500' : thin ? 'bg-saffron-500' : 'bg-brand-500',
                         )}
                         style={{ width: `${Math.min(100, Math.abs(r.progressPct))}%` }}
                       />

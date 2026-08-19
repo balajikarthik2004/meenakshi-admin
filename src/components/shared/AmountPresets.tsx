@@ -26,7 +26,7 @@ export function AmountPresets({
             aria-pressed={value === p}
             onClick={() => onChange(p)}
             className={cn(
-              'rounded-full border px-4 py-2 text-[14px] font-medium transition-colors active:scale-[.97]',
+              'rounded-full border px-4 py-2 text-base font-medium transition-colors active:scale-[.97]',
               value === p
                 ? 'border-brand-500 bg-brand-500 text-white'
                 : 'border-line bg-card text-ink hover:border-brand-300',
@@ -40,7 +40,7 @@ export function AmountPresets({
           aria-pressed={isCustom}
           onClick={() => onChange(presets.includes(value) ? 0 : value)}
           className={cn(
-            'rounded-full border px-4 py-2 text-[14px] font-medium transition-colors active:scale-[.97]',
+            'rounded-full border px-4 py-2 text-base font-medium transition-colors active:scale-[.97]',
             isCustom
               ? 'border-brand-500 bg-brand-500 text-white'
               : 'border-line bg-card text-ink hover:border-brand-300',
@@ -52,7 +52,7 @@ export function AmountPresets({
 
       {isCustom ? (
         <div className="relative max-w-[220px]">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[15px] text-muted">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-md text-muted">
             $
           </span>
           <Input
@@ -63,7 +63,7 @@ export function AmountPresets({
             aria-label="Custom amount"
             value={value || ''}
             onChange={(e) => onChange(Number(e.target.value) || 0)}
-            className="pl-7 text-[15px]"
+            className="pl-7 text-md"
             placeholder="Enter an amount"
           />
         </div>

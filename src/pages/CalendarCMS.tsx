@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { CalendarOff, Plus, Trash2 } from 'lucide-react'
 import type { RecurringRule } from '@/lib/data/types'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import {
   CalendarLegend,
   MonthCalendar,
@@ -114,12 +114,11 @@ export default function CalendarCMS() {
   }
 
   return (
-    <>
-      <PageHeader
-        title="Calendar CMS"
-        subtitle="Publish the weekly rhythm, one-off pujas and closures. Devotees see this immediately."
-      />
-
+    <PageShell
+      eyebrow="Programme"
+      title="Calendar CMS"
+      description="Publish the weekly rhythm, one-off pujas and closures. Devotees see this immediately."
+    >
       <div className="grid gap-5 xl:grid-cols-[1.6fr_1fr] xl:items-start">
         <div className="min-w-0">
           {loading ? (
@@ -139,8 +138,8 @@ export default function CalendarCMS() {
 
           <Card className="mt-5">
             <div className="border-b border-line p-4">
-              <h2 className="font-serif text-[18px]">Published recurring rules</h2>
-              <p className="mt-0.5 text-[12.5px] text-muted">
+              <h2 className="font-serif text-lg text-ink">Published recurring rules</h2>
+              <p className="mt-0.5 text-sm text-muted">
                 These expand automatically across every month on both calendars.
               </p>
             </div>
@@ -148,8 +147,8 @@ export default function CalendarCMS() {
               {(data?.[0] ?? []).map((r) => (
                 <li key={r.id} className="flex flex-wrap items-center gap-3 p-3.5">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13.5px] font-medium text-ink">{r.label}</p>
-                    <p className="text-[12.5px] text-muted">
+                    <p className="truncate text-base font-medium text-ink">{r.label}</p>
+                    <p className="text-sm text-muted">
                       {r.nth ? `${NTH[r.nth]} ` : 'Every '}
                       {DAYS[r.dayOfWeek]} at {r.time}
                       {r.pujaCatalogId
@@ -172,9 +171,9 @@ export default function CalendarCMS() {
           </Card>
         </div>
 
-        <Card className="xl:sticky xl:top-6">
+        <Card className="xl:sticky xl:top-[calc(var(--page-chrome-h,0px)+1.25rem)]">
           <div className="border-b border-line px-4 pt-3">
-            <Tabs items={FORMS} value={form} onChange={setForm} className="border-0" />
+            <Tabs items={FORMS} value={form} onChange={setForm} />
           </div>
 
           <div className="space-y-4 p-4">
@@ -337,18 +336,18 @@ export default function CalendarCMS() {
         description={`${dayEntries.length} scheduled item${dayEntries.length === 1 ? '' : 's'}`}
       >
         {dayEntries.length === 0 ? (
-          <p className="text-[13.5px] text-muted">
+          <p className="text-base text-muted">
             Nothing published for this day. Use the forms on the calendar page to add a puja or a
             closure.
           </p>
         ) : (
           <ul className="space-y-2.5">
             {dayEntries.map((e) => (
-              <li key={e.id} className="rounded-[10px] border border-line p-3.5">
+              <li key={e.id} className="rounded-[var(--radius-lg)] border border-line p-3.5">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-[14px] font-medium text-ink">{e.label}</p>
-                    <p className="text-[12.5px] text-muted">{fmtTime(e.date)}</p>
+                    <p className="text-base font-medium text-ink">{e.label}</p>
+                    <p className="text-sm text-muted">{fmtTime(e.date)}</p>
                   </div>
                   <Badge
                     variant={e.kind === 'event' ? 'leaf' : e.kind === 'closure' ? 'brand' : 'gold'}
@@ -357,7 +356,7 @@ export default function CalendarCMS() {
                   </Badge>
                 </div>
                 {e.detail ? (
-                  <p className="mt-1.5 line-clamp-3 text-[12.5px] leading-relaxed text-muted">
+                  <p className="mt-1.5 line-clamp-3 text-sm leading-relaxed text-muted">
                     {e.detail}
                   </p>
                 ) : null}
@@ -366,6 +365,6 @@ export default function CalendarCMS() {
           </ul>
         )}
       </Sheet>
-    </>
+    </PageShell>
   )
 }

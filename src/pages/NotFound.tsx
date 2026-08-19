@@ -10,8 +10,8 @@ export default function NotFound() {
       <span className="grid size-11 place-items-center rounded-full bg-tint text-brand-400">
         <Compass className="size-5" />
       </span>
-      <h1 className="font-serif text-[28px] leading-tight">No such console page</h1>
-      <p className="max-w-sm text-[14px] text-muted">
+      <h1 className="font-bold text-3xl leading-tight">No such console page</h1>
+      <p className="max-w-sm text-base text-muted">
         That route is not part of the operations console.
       </p>
       <div className="mt-2 flex flex-wrap justify-center gap-2.5">

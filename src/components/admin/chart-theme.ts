@@ -18,24 +18,38 @@ export const CHART = {
   // step clears 2:1 against white — the previous ramp opened at #f4dcae, which left the
   // four smaller bars washed out and near-identical.
   sequential: ['#d9a75f', '#c8843c', '#b1651f', '#9c1f16', '#6b1a10'] as const,
-  grid: '#e7dfd2',
-  axis: '#6b625a',
+  grid: '#ece2d2',
+  axis: '#6f6157',
   surface: '#ffffff',
 } as const
 
-export const AXIS_TICK = { fill: CHART.axis, fontSize: 11.5 }
+/* Axis labels are interface type, not chart type — same face and weight as a table
+   header, so a chart card and a ledger card read as the same document. */
+export const AXIS_TICK = {
+  fill: CHART.axis,
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: '0.01em',
+}
 
 /** Recharts renders tooltips as DOM, so they take the app's card styling directly. */
 export const TOOLTIP_STYLE = {
   contentStyle: {
-    borderRadius: 10,
+    borderRadius: 9,
     border: '1px solid var(--color-line)',
     background: 'var(--color-card)',
     boxShadow: 'var(--shadow-lg)',
     fontSize: 12.5,
     padding: '8px 10px',
   },
-  labelStyle: { color: 'var(--color-muted)', marginBottom: 2, fontSize: 11.5 },
-  itemStyle: { color: 'var(--color-ink)', padding: 0 },
+  labelStyle: {
+    color: 'var(--color-muted)',
+    marginBottom: 3,
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase' as const,
+  },
+  itemStyle: { color: 'var(--color-ink)', padding: 0, fontWeight: 600 },
   cursor: { stroke: CHART.grid, strokeWidth: 1 },
 }

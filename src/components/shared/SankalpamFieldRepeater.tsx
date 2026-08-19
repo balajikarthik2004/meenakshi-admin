@@ -34,7 +34,7 @@ export function SankalpamFieldRepeater({
       <div className="space-y-2">
         {names.map((n, i) => (
           <div key={i} className="flex items-center gap-2">
-            <span className="w-6 shrink-0 text-right text-[12px] tabular-nums text-muted">
+            <span className="w-6 shrink-0 text-right text-sm tabular-nums text-muted">
               {i + 1}.
             </span>
             <Input
@@ -71,7 +71,7 @@ export function SankalpamFieldRepeater({
         </Button>
         {unused.length > 0 ? (
           <>
-            <span className="inline-flex items-center gap-1 text-[12px] text-muted">
+            <span className="inline-flex items-center gap-1 text-sm text-muted">
               <Users className="size-3.5" />
               From your family tree:
             </span>
@@ -80,7 +80,7 @@ export function SankalpamFieldRepeater({
                 key={s}
                 type="button"
                 onClick={() => add(s)}
-                className="rounded-full border border-line bg-tint px-2.5 py-1 text-[12px] text-brand-700 transition-colors hover:border-brand-300"
+                className="rounded-full border border-line bg-tint px-2.5 py-1 text-sm text-brand-700 transition-colors hover:border-brand-300"
               >
                 + {s}
               </button>
@@ -89,7 +89,7 @@ export function SankalpamFieldRepeater({
         ) : null}
       </div>
 
-      <p className="text-[12px] text-muted">
+      <p className="text-sm text-muted">
         {names.length} of {MAX_SANKALPAM_NAMES} names. Nakshatra and gothra are taken from your
         profile and read with the primary name.
       </p>

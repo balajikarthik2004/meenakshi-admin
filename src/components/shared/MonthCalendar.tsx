@@ -84,12 +84,12 @@ export function MonthCalendar({
   return (
     <div
       className={cn(
-        'rounded-[10px] border border-line bg-card shadow-[var(--shadow-sm)]',
+        'rounded-[var(--radius-lg)] border border-line bg-card shadow-[var(--shadow-sm)]',
         className,
       )}
     >
       <div className="flex items-center justify-between gap-3 border-b border-line p-4">
-        <h2 className="font-serif text-[20px]">{format(month, 'MMMM yyyy')}</h2>
+        <h2 className="text-lg font-bold text-ink">{format(month, 'MMMM yyyy')}</h2>
         <div className="flex items-center gap-1.5">
           <Button variant="outline" size="sm" onClick={() => onMonthChange(new Date())}>
             Today
@@ -115,10 +115,7 @@ export function MonthCalendar({
 
       <div className="grid grid-cols-7 border-b border-line bg-tint/50">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-          <div
-            key={d}
-            className="px-2 py-2 text-center text-[11px] font-semibold uppercase tracking-[0.07em] text-muted"
-          >
+          <div key={d} className="eyebrow px-2 py-2 text-center">
             <span className="hidden sm:inline">{d}</span>
             <span className="sm:hidden">{d[0]}</span>
           </div>
@@ -148,7 +145,7 @@ export function MonthCalendar({
             >
               <span
                 className={cn(
-                  'grid size-6 shrink-0 place-items-center rounded-full text-[12px] tabular-nums',
+                  'grid size-6 shrink-0 place-items-center rounded-full text-sm tabular-nums',
                   isToday(day) && 'bg-brand-500 font-semibold text-white',
                   !isToday(day) && outside && 'text-muted/60',
                   !isToday(day) && !outside && 'text-ink',
@@ -169,7 +166,7 @@ export function MonthCalendar({
                   <span
                     key={e.id}
                     className={cn(
-                      'truncate rounded border px-1 py-0.5 text-[10.5px] leading-tight',
+                      'truncate rounded border px-1 py-0.5 text-2xs leading-tight',
                       KIND_CHIP[e.kind],
                     )}
                   >
@@ -177,9 +174,7 @@ export function MonthCalendar({
                   </span>
                 ))}
                 {dayEntries.length > 2 ? (
-                  <span className="px-1 text-[10.5px] text-muted">
-                    +{dayEntries.length - 2} more
-                  </span>
+                  <span className="px-1 text-2xs text-muted">+{dayEntries.length - 2} more</span>
                 ) : null}
               </span>
             </button>
@@ -194,7 +189,7 @@ export function CalendarLegend({ className }: { className?: string }) {
   return (
     <ul className={cn('flex flex-wrap items-center gap-x-4 gap-y-1.5', className)}>
       {CALENDAR_LEGEND.map((l) => (
-        <li key={l.kind} className="flex items-center gap-1.5 text-[12.5px] text-muted">
+        <li key={l.kind} className="flex items-center gap-1.5 text-sm text-muted">
           <span className={cn('size-2 rounded-full', KIND_DOT[l.kind])} />
           {l.label}
         </li>

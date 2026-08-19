@@ -8,12 +8,12 @@ import {
   Users,
   Wallet,
 } from 'lucide-react'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { MetricCard, BarChartByPuja, TrendChart } from '@/components/admin/charts'
 import { TodaysArchanaList, type ArchanaRow } from '@/components/admin/TodaysArchanaList'
 import { BreakEvenMeter } from '@/components/shared/BreakEvenMeter'
 import { LoadingSkeleton } from '@/components/shared/states'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { buttonVariants } from '@/components/ui/button'
 import { useToast } from '@/components/ui/toast'
 import {
@@ -45,10 +45,9 @@ export default function Dashboard() {
 
   if (loading || !data) {
     return (
-      <>
-        <PageHeader title="Operations dashboard" subtitle="Loading today’s figures…" />
+      <PageShell title="Operations dashboard" description="Loading today’s figures…">
         <LoadingSkeleton variant="tiles" rows={4} />
-      </>
+      </PageShell>
     )
   }
 
@@ -81,26 +80,25 @@ export default function Dashboard() {
   const trendSeries = stats.monthlyTrend.map((m) => m.amount)
 
   return (
-    <>
-      <PageHeader
-        title={`Good morning, ${user.name.split(' ')[0]}`}
-        subtitle={`${fmtDate(new Date(), 'EEEE, MMMM d, yyyy')} · ${rows.length} pujas on today’s roster`}
-        actions={
-          <>
-            <Link to="/bookings/today" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
-              <CalendarCheck />
-              Today’s pujas
-            </Link>
-            <Link to="/transparency" className={buttonVariants({ size: 'sm' })}>
-              <TrendingUp />
-              Transparency
-            </Link>
-          </>
-        }
-      />
-
+    <PageShell
+      eyebrow="Operations"
+      title={`Good morning, ${user.name.split(' ')[0]}`}
+      description={`${fmtDate(new Date(), 'EEEE, MMMM d, yyyy')} · ${rows.length} pujas on today’s roster`}
+      actions={
+        <>
+          <Link to="/bookings/today" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+            <CalendarCheck />
+            Today’s pujas
+          </Link>
+          <Link to="/transparency" className={buttonVariants({ size: 'sm' })}>
+            <TrendingUp />
+            Transparency
+          </Link>
+        </>
+      }
+    >
       {/* Row 1 — four headline metrics */}
-      <div className="grid items-start gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           label="Donations"
           value={money(stats.donationsYTD)}
@@ -137,16 +135,12 @@ export default function Dashboard() {
       </div>
 
       {/* Row 2 — break-even, action queue, prasadam */}
-      <div className="mt-3 grid items-start gap-3 lg:grid-cols-3">
+      <div className="mt-3 grid gap-3 lg:grid-cols-3">
         <Card className="p-4 lg:col-span-1">
-          <p className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-muted">
-            Break-even snapshot
-          </p>
-          <div className="mt-2 flex items-baseline gap-2">
-            <span className="font-serif text-[26px] leading-none">
-              {moneyShort(snapshot.ytdCollected)}
-            </span>
-            <span className="text-[13px] text-muted">of {moneyShort(snapshot.annualTarget)}</span>
+          <p className="eyebrow">Break-even snapshot</p>
+          <div className="mt-2.5 flex items-baseline gap-2">
+            <span className="stat-figure">{moneyShort(snapshot.ytdCollected)}</span>
+            <span className="text-sm text-muted">of {moneyShort(snapshot.annualTarget)}</span>
           </div>
           <BreakEvenMeter
             className="mt-3"
@@ -178,11 +172,11 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Donations received, last 12 months</CardTitle>
-            <p className="text-[12.5px] text-muted">
+            <CardDescription>
               Hover any month for the exact figure. Excludes puja sponsorships.
-            </p>
+            </CardDescription>
           </CardHeader>
-          <div className="p-5 pt-1">
+          <div className="px-4 py-4">
             <TrendChart data={stats.monthlyTrend} />
           </div>
         </Card>
@@ -190,11 +184,9 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Bookings by puja type</CardTitle>
-            <p className="text-[12.5px] text-muted">
-              Live and completed sponsorships, cancelled excluded.
-            </p>
+            <CardDescription>Live and completed sponsorships, cancelled excluded.</CardDescription>
           </CardHeader>
-          <div className="p-5 pt-1">
+          <div className="px-4 py-4">
             <BarChartByPuja data={stats.byPujaType} />
           </div>
         </Card>
@@ -202,17 +194,14 @@ export default function Dashboard() {
 
       {/* Row 4 — today's roster */}
       <section className="mt-6">
-        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-          <h2 className="font-serif text-[20px]">Today at the temple</h2>
-          <Link
-            to="/bookings/today"
-            className="text-[13px] font-medium text-brand-500 hover:underline"
-          >
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 border-b border-line-soft pb-2">
+          <h2 className="font-serif text-lg text-ink">Today at the temple</h2>
+          <Link to="/bookings/today" className="text-sm font-bold text-brand-600 hover:underline">
             Open the full roster
           </Link>
         </div>
         <TodaysArchanaList rows={rows.slice(0, 8)} onComplete={complete} onSkip={skip} />
       </section>
-    </>
+    </PageShell>
   )
 }

@@ -40,9 +40,9 @@ export function MockSuccessScreen({
         <span className="animate-fade-in grid size-16 place-items-center rounded-full bg-leaf-500/12 text-leaf-500 ring-8 ring-leaf-500/[0.06]">
           <Check className="size-8" strokeWidth={2.5} />
         </span>
-        <h1 className="font-serif text-[28px] leading-tight">{title}</h1>
-        {subtitle ? <p className="max-w-md text-[14px] text-muted">{subtitle}</p> : null}
-        <p className="rounded-full border border-line bg-tint px-3 py-1 font-mono text-[12.5px] text-brand-700">
+        <h1 className="font-bold text-3xl leading-tight">{title}</h1>
+        {subtitle ? <p className="max-w-md text-base text-muted">{subtitle}</p> : null}
+        <p className="rounded-full border border-line bg-tint px-3 py-1 font-mono text-sm text-brand-700">
           {referenceLabel}: {reference}
         </p>
       </div>
@@ -55,8 +55,8 @@ export function MockSuccessScreen({
                 key={r.label}
                 className="flex items-baseline justify-between gap-4 py-2.5 first:pt-0 last:pb-0"
               >
-                <dt className="text-[13px] text-muted">{r.label}</dt>
-                <dd className="text-right text-[13.5px] font-medium text-ink">{r.value}</dd>
+                <dt className="text-base text-muted">{r.label}</dt>
+                <dd className="text-right text-base font-medium text-ink">{r.value}</dd>
               </div>
             ))}
           </dl>
@@ -68,13 +68,11 @@ export function MockSuccessScreen({
       <Card className="overflow-hidden">
         <div className="flex items-center gap-2 border-b border-line bg-tint/60 px-4 py-2.5">
           <Mail className="size-4 text-brand-500" />
-          <p className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted">
-            Confirmation email preview
-          </p>
-          <span className="ml-auto text-[11.5px] text-muted">Not actually sent</span>
+          <p className="eyebrow">Confirmation email preview</p>
+          <span className="ml-auto text-xs text-muted">Not actually sent</span>
         </div>
         <div className="space-y-3 p-5">
-          <div className="space-y-0.5 text-[12.5px] text-muted">
+          <div className="space-y-0.5 text-sm text-muted">
             <p>
               <span className="font-medium text-ink">From:</span> Sri Meenakshi Devasthanam
               &lt;office@smdpearland.org&gt;
@@ -83,7 +81,7 @@ export function MockSuccessScreen({
               <span className="font-medium text-ink">Subject:</span> {emailSubject}
             </p>
           </div>
-          <div className="rounded-[10px] border border-line bg-bg/60 p-4 text-[13.5px] leading-relaxed text-ink">
+          <div className="rounded-[var(--radius-lg)] border border-line bg-bg/60 p-4 text-base leading-relaxed text-ink">
             {emailBody}
           </div>
         </div>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { ArrowLeft, Mail, MapPin, Phone, Save, SquarePen, Unlock } from 'lucide-react'
+import { Mail, MapPin, Phone, Save, SquarePen, Unlock } from 'lucide-react'
 import type { FamilyMember, User } from '@/lib/data/types'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { FamilyTreeEditor } from '@/components/shared/FamilyTreeEditor'
 import { RoleBadge, StatusPill, TierBadge } from '@/components/shared/badges'
 import { EmptyState, LoadingSkeleton } from '@/components/shared/states'
@@ -67,10 +67,9 @@ export default function DevoteeDetail() {
 
   if (loading || !data) {
     return (
-      <>
-        <PageHeader title="Devotee" subtitle="Loading record…" />
+      <PageShell title="Devotee" description="Loading record…">
         <LoadingSkeleton variant="table" rows={5} />
-      </>
+      </PageShell>
     )
   }
 
@@ -112,50 +111,44 @@ export default function DevoteeDetail() {
     setForm((f) => (f ? { ...f, [k]: e.target.value } : f))
 
   return (
-    <>
-      <Link
-        to="/devotees"
-        className="mb-4 inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink"
-      >
-        <ArrowLeft className="size-3.5" />
-        All devotees
-      </Link>
-
-      <Card className="mb-5 p-5">
-        <div className="flex flex-wrap items-start gap-4">
-          <Avatar initials={user.avatarInitials} className="size-14 text-[18px]" />
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="font-serif text-[24px] leading-tight">{user.name}</h1>
-              <RoleBadge role={user.role} />
-              {membership ? <TierBadge tier={membership.tier} /> : null}
-            </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted">
-              <span className="inline-flex items-center gap-1.5">
-                <Phone className="size-3.5" />
-                {user.phone}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Mail className="size-3.5" />
-                {user.email}
-              </span>
-              <span className="inline-flex items-center gap-1.5">
-                <MapPin className="size-3.5" />
-                {user.city}, {user.state}
-              </span>
-            </div>
-            <p className="mt-1 text-[12.5px] text-muted">
-              {user.nakshatra ?? '—'} nakshatra · {user.gothra ?? '—'} gothra · Joined{' '}
-              {fmtDate(user.createdAt, 'MMMM yyyy')}
-            </p>
-          </div>
-          <Button onClick={() => setEditing(true)}>
-            <SquarePen />
-            Edit record
-          </Button>
-        </div>
-      </Card>
-
+    <PageShell
+      back={{ to: '/devotees', label: 'All devotees' }}
+      // The name, the badges and the avatar were in a hero card of their own, directly
+      // under a page that had no title — so the record announced itself twice, once in
+      // the browser tab and once in a box. It is the page title; it belongs in the
+      // header, and the header is what stays put while the tabs below it scroll.
+      title={
+        <span className="flex min-w-0 flex-wrap items-center gap-2">
+          <Avatar initials={user.avatarInitials} className="size-8 text-sm" />
+          <span className="truncate">{user.name}</span>
+          <RoleBadge role={user.role} />
+          {membership ? <TierBadge tier={membership.tier} /> : null}
+        </span>
+      }
+      description={
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+          <span className="inline-flex items-center gap-1.5">
+            <Phone className="size-3.5" />
+            {user.phone}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <Mail className="size-3.5" />
+            {user.email}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin className="size-3.5" />
+            {user.city}, {user.state}
+          </span>
+        </span>
+      }
+      actions={
+        <Button size="sm" onClick={() => setEditing(true)}>
+          <SquarePen />
+          Edit record
+        </Button>
+      }
+      tabs={<Tabs items={TABS} value={tab} onChange={setTab} />}
+    >
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile
           label="Lifetime contributions"
@@ -182,13 +175,11 @@ export default function DevoteeDetail() {
         />
       </div>
 
-      <Tabs items={TABS} value={tab} onChange={setTab} className="mb-4" />
-
       {tab === 'overview' ? (
         <div className="grid gap-4 lg:grid-cols-2">
           <Card className="p-5">
-            <h2 className="font-serif text-[18px]">Identity</h2>
-            <dl className="mt-3 divide-y divide-line text-[13.5px]">
+            <h2 className="font-serif text-lg text-ink">Identity</h2>
+            <dl className="mt-3 divide-y divide-line text-base">
               {[
                 ['Full name', user.name],
                 ['Phone', user.phone],
@@ -207,22 +198,22 @@ export default function DevoteeDetail() {
           </Card>
 
           <Card className="p-5">
-            <h2 className="font-serif text-[18px]">Address</h2>
-            <address className="mt-3 not-italic text-[13.5px] leading-relaxed">
+            <h2 className="font-serif text-lg text-ink">Address</h2>
+            <address className="mt-3 not-italic text-base leading-relaxed">
               {user.address}
               <br />
               {user.city}, {user.state} {user.zip}
               <br />
               {user.country}
             </address>
-            <h2 className="mt-5 font-serif text-[18px]">Recent activity</h2>
-            <ul className="mt-2 space-y-2 text-[13px]">
+            <h2 className="mt-5 font-bold text-lg">Recent activity</h2>
+            <ul className="mt-2 space-y-2 text-base">
               {[...bookings.slice(0, 3), ...[]].map((b) => (
                 <li key={b.id} className="flex items-baseline justify-between gap-3">
                   <span className="min-w-0 truncate text-muted">
                     Sponsored {PUJA_BY_ID.get(b.pujaCatalogId)?.name}
                   </span>
-                  <span className="shrink-0 text-[12px] text-muted">{fmtDate(b.createdAt)}</span>
+                  <span className="shrink-0 text-sm text-muted">{fmtDate(b.createdAt)}</span>
                 </li>
               ))}
               {donations.slice(0, 3).map((d) => (
@@ -230,7 +221,7 @@ export default function DevoteeDetail() {
                   <span className="min-w-0 truncate text-muted">
                     {money(d.amount)} to {titleCase(d.category)}
                   </span>
-                  <span className="shrink-0 text-[12px] text-muted">{fmtDate(d.createdAt)}</span>
+                  <span className="shrink-0 text-sm text-muted">{fmtDate(d.createdAt)}</span>
                 </li>
               ))}
             </ul>
@@ -319,7 +310,7 @@ export default function DevoteeDetail() {
       {tab === 'membership' ? (
         <Card className="p-5">
           {membership ? (
-            <dl className="divide-y divide-line text-[13.5px]">
+            <dl className="divide-y divide-line text-base">
               {[
                 ['Tier', titleCase(membership.tier)],
                 ['Status', titleCase(membership.status)],
@@ -350,7 +341,7 @@ export default function DevoteeDetail() {
 
       {tab === 'family' ? (
         <Card className="p-5">
-          <h2 className="mb-3 font-serif text-[18px]">Family tree</h2>
+          <h2 className="mb-3 font-bold text-lg">Family tree</h2>
           <FamilyTreeEditor members={members} onChange={setMembers} />
           <Button className="mt-4" onClick={save}>
             <Save />
@@ -361,10 +352,8 @@ export default function DevoteeDetail() {
 
       {tab === 'notes' ? (
         <Card className="p-5">
-          <h2 className="font-serif text-[18px]">Office notes</h2>
-          <p className="mt-1 text-[12.5px] text-muted">
-            Internal only — never shown to the devotee.
-          </p>
+          <h2 className="font-serif text-lg text-ink">Office notes</h2>
+          <p className="mt-1 text-sm text-muted">Internal only — never shown to the devotee.</p>
           <Textarea
             className="mt-3"
             rows={6}
@@ -452,6 +441,6 @@ export default function DevoteeDetail() {
           </div>
         ) : null}
       </Sheet>
-    </>
+    </PageShell>
   )
 }

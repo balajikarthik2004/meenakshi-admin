@@ -65,7 +65,7 @@ export function TodaysArchanaList({
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-line bg-card px-3 py-2 text-[13px]">
+        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-line bg-card px-3 py-2 text-base">
           <Checkbox
             checked={allPendingChecked}
             onChange={toggleAll}
@@ -94,7 +94,7 @@ export function TodaysArchanaList({
         </Button>
       </div>
 
-      <ul className="divide-y divide-line overflow-hidden rounded-[10px] border border-line bg-card">
+      <ul className="divide-y divide-line overflow-hidden rounded-[var(--radius-lg)] border border-line bg-card">
         {rows.map(({ occurrence, booking, devotee }) => {
           const puja = booking ? PUJA_BY_ID.get(booking.pujaCatalogId) : undefined
           const done = occurrence.status !== 'scheduled'
@@ -109,15 +109,15 @@ export function TodaysArchanaList({
                 disabled={done}
                 aria-label={`Select ${puja?.name ?? 'puja'} for ${devotee?.name ?? 'devotee'}`}
               />
-              <span className="w-[68px] shrink-0 font-mono text-[12.5px] text-brand-600">
+              <span className="w-[68px] shrink-0 font-mono text-sm text-brand-600">
                 {fmtTime(occurrence.scheduledAt)}
               </span>
               <div className="min-w-[180px] flex-1">
-                <p className={cn('text-[13.5px] font-medium', done ? 'text-muted' : 'text-ink')}>
+                <p className={cn('text-base font-medium', done ? 'text-muted' : 'text-ink')}>
                   {puja?.name ?? 'Puja'}
                   <span className="ml-2 font-normal text-muted">{puja?.deity}</span>
                 </p>
-                <p className="text-[12.5px] text-muted">
+                <p className="text-sm text-muted">
                   {booking?.sankalpamNames.join(', ') ?? '—'}
                   {devotee?.nakshatra ? ` · ${devotee.nakshatra}` : ''}
                   {devotee?.gothra ? ` · ${devotee.gothra} gothra` : ''}
@@ -150,10 +150,10 @@ export function TodaysArchanaList({
           </>
         }
       >
-        <div className="print-area text-[13px]">
+        <div className="print-area text-base">
           <header className="mb-4 border-b border-line pb-3">
-            <p className="font-serif text-[18px]">{TEMPLE.name}</p>
-            <p className="text-[12px] text-muted">
+            <p className="font-bold text-lg">{TEMPLE.name}</p>
+            <p className="text-sm text-muted">
               Archana roster · {fmtDate(date, 'EEEE, MMMM d, yyyy')} · {rows.length} entries
             </p>
           </header>
@@ -161,10 +161,7 @@ export function TodaysArchanaList({
             <thead>
               <tr className="border-b border-line">
                 {['Time', 'Puja', 'Names · Nakshatra · Gothra', 'Done'].map((h) => (
-                  <th
-                    key={h}
-                    className="py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted"
-                  >
+                  <th key={h} className="eyebrow py-1.5">
                     {h}
                   </th>
                 ))}
@@ -175,13 +172,13 @@ export function TodaysArchanaList({
                 const puja = booking ? PUJA_BY_ID.get(booking.pujaCatalogId) : undefined
                 return (
                   <tr key={occurrence.id}>
-                    <td className="py-1.5 align-top font-mono text-[12px] whitespace-nowrap">
+                    <td className="py-1.5 align-top font-mono text-sm whitespace-nowrap">
                       {fmtTime(occurrence.scheduledAt)}
                     </td>
                     <td className="py-1.5 align-top">{puja?.name}</td>
                     <td className="py-1.5 align-top">
                       {booking?.sankalpamNames.join(', ')}
-                      <span className="block text-[11.5px] text-muted">
+                      <span className="block text-xs text-muted">
                         {[devotee?.nakshatra, devotee?.gothra && `${devotee.gothra} gothra`]
                           .filter(Boolean)
                           .join(' · ')}

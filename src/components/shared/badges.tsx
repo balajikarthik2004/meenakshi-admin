@@ -64,6 +64,39 @@ const STATUS_VARIANT: Record<AnyStatus, 'leaf' | 'gold' | 'brand' | 'neutral' | 
   skipped: 'brand',
 }
 
+/**
+ * The tint that separates one status from another is deliberately quiet — in a
+ * forty-row table a badge is a label, not a highlight — but held that quiet, "Completed"
+ * and "Scheduled" became the same pale pill two rows apart, and the roster's whole job
+ * is telling those two apart at a glance.
+ *
+ * A solid dot restores that at no extra volume: it is small enough to stay out of the
+ * way when you are reading a name, and saturated enough to scan straight down the
+ * column when you are counting what is left to do. Colour is never the only carrier —
+ * the word is right beside it.
+ */
+const STATUS_DOT: Record<AnyStatus, string> = {
+  active: 'bg-leaf-500',
+  confirmed: 'bg-leaf-500',
+  completed: 'bg-leaf-400',
+  scheduled: 'bg-saffron-500',
+  upcoming: 'bg-saffron-500',
+  ongoing: 'bg-leaf-500',
+  'in-progress': 'bg-saffron-500',
+  planned: 'bg-faint',
+  pending: 'bg-saffron-500',
+  paused: 'bg-saffron-500',
+  expired: 'bg-brand-500',
+  cancelled: 'bg-brand-500',
+  skipped: 'bg-brand-500',
+}
+
 export const StatusPill = ({ status }: { status: string }) => (
-  <Badge variant={STATUS_VARIANT[status as AnyStatus] ?? 'neutral'}>{titleCase(status)}</Badge>
+  <Badge variant={STATUS_VARIANT[status as AnyStatus] ?? 'neutral'}>
+    <span
+      className={`size-1.5 shrink-0 rounded-full ${STATUS_DOT[status as AnyStatus] ?? 'bg-faint'}`}
+      aria-hidden="true"
+    />
+    {titleCase(status)}
+  </Badge>
 )

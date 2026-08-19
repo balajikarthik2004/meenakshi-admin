@@ -1,16 +1,24 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
+/**
+ * One field recipe for every control. The inset hairline shadow is what makes an input
+ * read as a well rather than a bordered box, and it is the cheapest way to tell a
+ * disabled field from an enabled one at a glance.
+ */
 const field =
-  'w-full rounded-md border border-line bg-card px-3 text-sm text-ink placeholder:text-muted/70 ' +
-  'transition-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/35 ' +
-  'focus-visible:border-brand-400 disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-tint/60'
+  'w-full rounded-[var(--radius)] border border-line bg-card px-2.5 text-sm text-ink ' +
+  'placeholder:text-faint ' +
+  'transition-[border-color,box-shadow] duration-150 hover:border-muted ' +
+  'focus-visible:border-brand-400 ' +
+  'disabled:cursor-not-allowed disabled:border-line-soft disabled:bg-tint/50 disabled:text-muted ' +
+  'aria-[invalid=true]:border-brand-500 aria-[invalid=true]:bg-brand-50/40'
 
 export const Input = React.forwardRef<
   HTMLInputElement,
   React.InputHTMLAttributes<HTMLInputElement>
 >(({ className, ...props }, ref) => (
-  <input ref={ref} className={cn(field, 'h-10', className)} {...props} />
+  <input ref={ref} className={cn(field, 'h-9', className)} {...props} />
 ))
 Input.displayName = 'Input'
 
@@ -35,12 +43,12 @@ export const Select = React.forwardRef<
     ref={ref}
     className={cn(
       field,
-      'h-10 cursor-pointer appearance-none bg-[length:14px] bg-[right_10px_center] bg-no-repeat pr-8',
+      'h-9 cursor-pointer appearance-none bg-[length:13px] bg-[right_10px_center] bg-no-repeat pr-8',
       className,
     )}
     style={{
       backgroundImage:
-        "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b625a' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+        "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f6157' stroke-width='2.25' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
     }}
     {...props}
   />
@@ -54,11 +62,14 @@ export const Label = ({
   ...props
 }: React.LabelHTMLAttributes<HTMLLabelElement> & { hint?: React.ReactNode }) => (
   <label
-    className={cn('mb-1.5 flex items-center gap-1.5 text-[13px] font-medium text-ink', className)}
+    className={cn(
+      'mb-1 flex items-baseline gap-1.5 text-xs font-semibold text-ink-soft',
+      className,
+    )}
     {...props}
   >
     {children}
-    {hint ? <span className="text-[12px] font-normal text-muted">{hint}</span> : null}
+    {hint ? <span className="text-xs font-normal text-faint">{hint}</span> : null}
   </label>
 )
 
@@ -84,7 +95,11 @@ export const Field = ({
       </Label>
     ) : null}
     {children}
-    {error ? <p className="mt-1 text-[12px] text-brand-600">{error}</p> : null}
+    {error ? (
+      <p className="mt-1 text-xs font-medium text-brand-600" role="alert">
+        {error}
+      </p>
+    ) : null}
   </div>
 )
 
@@ -96,8 +111,8 @@ export const Checkbox = React.forwardRef<
     ref={ref}
     type="checkbox"
     className={cn(
-      'size-4 shrink-0 cursor-pointer rounded-[4px] border border-line accent-[var(--color-brand-500)] ' +
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/35',
+      'size-4 shrink-0 cursor-pointer rounded-[3px] border border-line accent-[var(--color-brand-500)] ' +
+        'transition-colors hover:border-muted',
       className,
     )}
     {...props}
@@ -112,11 +127,7 @@ export const Radio = React.forwardRef<
   <input
     ref={ref}
     type="radio"
-    className={cn(
-      'size-4 shrink-0 cursor-pointer accent-[var(--color-brand-500)] ' +
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/35',
-      className,
-    )}
+    className={cn('size-4 shrink-0 cursor-pointer accent-[var(--color-brand-500)]', className)}
     {...props}
   />
 ))

@@ -53,25 +53,34 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <div
               key={t.id}
               role="status"
-              className="animate-fade-in pointer-events-auto flex items-start gap-3 rounded-[10px] border border-line bg-card p-3.5 shadow-[var(--shadow-lg)]"
+              // A tone rail down the left edge, so success and warning stay separable
+              // in peripheral vision — the icon alone needs a look to decode.
+              className={cn(
+                'animate-fade-in pointer-events-auto flex items-start gap-2.5 rounded-[var(--radius)] border border-line border-l-[3px] bg-card p-3.5 shadow-[var(--shadow-lg)]',
+                t.tone === 'success' && 'border-l-leaf-500',
+                t.tone === 'info' && 'border-l-brand-500',
+                t.tone === 'warn' && 'border-l-saffron-400',
+              )}
             >
               <Icon
                 className={cn(
-                  'mt-0.5 size-4 shrink-0',
+                  'mt-px size-4 shrink-0',
                   t.tone === 'success' && 'text-leaf-500',
                   t.tone === 'info' && 'text-brand-500',
                   t.tone === 'warn' && 'text-gold-600',
                 )}
               />
               <div className="min-w-0 flex-1">
-                <p className="text-[13.5px] font-medium text-ink">{t.title}</p>
-                {t.detail ? <p className="mt-0.5 text-[12.5px] text-muted">{t.detail}</p> : null}
+                <p className="text-base font-bold leading-snug text-ink">{t.title}</p>
+                {t.detail ? (
+                  <p className="mt-0.5 text-sm leading-relaxed text-muted">{t.detail}</p>
+                ) : null}
               </div>
               <button
                 type="button"
                 onClick={() => dismiss(t.id)}
                 aria-label="Dismiss"
-                className="text-muted transition-colors hover:text-ink"
+                className="-mr-0.5 -mt-0.5 rounded-[4px] p-0.5 text-faint transition-colors hover:bg-tint hover:text-ink"
               >
                 <X className="size-3.5" />
               </button>

@@ -24,28 +24,28 @@ export function PrintableAgmReport({
   )
 
   return (
-    <div className="print-area space-y-6 text-[12.5px] leading-relaxed text-ink">
+    <div className="print-area space-y-6 text-sm leading-relaxed text-ink">
       <header className="flex items-start justify-between gap-4 border-b-2 border-ink/20 pb-4">
         <div className="flex items-start gap-3">
           <Logo size={44} />
           <div>
-            <p className="font-serif text-[20px] leading-tight">{TEMPLE.name}</p>
-            <p className="text-[12px] text-muted">
+            <p className="font-bold text-xl leading-tight">{TEMPLE.name}</p>
+            <p className="text-sm text-muted">
               {TEMPLE.address}, {TEMPLE.city}, {TEMPLE.state} {TEMPLE.zip} · EIN {TEMPLE_EIN}
             </p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-muted">
+          <p className="text-xs font-semibold uppercase tracking-[0.09em] text-muted">
             Annual General Meeting
           </p>
-          <p className="font-serif text-[16px]">Financial Summary</p>
-          <p className="text-[12px] text-muted">Prepared {fmtDate(snapshot.updatedAt)}</p>
+          <p className="font-bold text-md">Financial Summary</p>
+          <p className="text-sm text-muted">Prepared {fmtDate(snapshot.updatedAt)}</p>
         </div>
       </header>
 
       <section>
-        <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.09em] text-muted">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.09em] text-muted">
           1 · Operating position
         </h2>
         <table className="w-full border-collapse">
@@ -66,7 +66,7 @@ export function PrintableAgmReport({
       </section>
 
       <section>
-        <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.09em] text-muted">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.09em] text-muted">
           2 · Puja sponsorship profit &amp; loss
         </h2>
         <table className="w-full border-collapse">
@@ -75,7 +75,7 @@ export function PrintableAgmReport({
               {['Puja', 'Sponsors', 'Collected', 'Direct cost', 'Net'].map((h, i) => (
                 <th
                   key={h}
-                  className={`py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted ${i === 0 ? 'text-left' : 'text-right'}`}
+                  className={`py-1.5 text-2xs font-semibold uppercase tracking-[0.07em] text-muted ${i === 0 ? 'text-left' : 'text-right'}`}
                 >
                   {h}
                 </th>
@@ -108,7 +108,7 @@ export function PrintableAgmReport({
       </section>
 
       <section>
-        <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.09em] text-muted">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.09em] text-muted">
           3 · Festival break-even
         </h2>
         <table className="w-full border-collapse">
@@ -117,7 +117,7 @@ export function PrintableAgmReport({
               {['Festival', 'Date', 'Target', 'Raised', 'Variance'].map((h, i) => (
                 <th
                   key={h}
-                  className={`py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted ${i < 2 ? 'text-left' : 'text-right'}`}
+                  className={`py-1.5 text-2xs font-semibold uppercase tracking-[0.07em] text-muted ${i < 2 ? 'text-left' : 'text-right'}`}
                 >
                   {h}
                 </th>
@@ -143,7 +143,7 @@ export function PrintableAgmReport({
       </section>
 
       <section>
-        <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.09em] text-muted">
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.09em] text-muted">
           4 · Capital projects
         </h2>
         <table className="w-full border-collapse">
@@ -152,7 +152,7 @@ export function PrintableAgmReport({
               {['Project', 'Status', 'Target', 'Raised', 'Spent', 'Progress'].map((h, i) => (
                 <th
                   key={h}
-                  className={`py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.07em] text-muted ${i < 2 ? 'text-left' : 'text-right'}`}
+                  className={`py-1.5 text-2xs font-semibold uppercase tracking-[0.07em] text-muted ${i < 2 ? 'text-left' : 'text-right'}`}
                 >
                   {h}
                 </th>
@@ -174,7 +174,7 @@ export function PrintableAgmReport({
         </table>
       </section>
 
-      <footer className="border-t border-line pt-4 text-[11px] text-muted">
+      <footer className="border-t border-line pt-4 text-xs text-muted">
         <p>
           {TEMPLE.name} is a 501(c)(3) non-profit organization. This summary is prepared from the
           temple’s operating ledger and is presented to members at the Annual General Meeting.

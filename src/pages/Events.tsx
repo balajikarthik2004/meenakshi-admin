@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Plus, SquarePen, Trash2, Users } from 'lucide-react'
 import type { TempleEvent } from '@/lib/data/types'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { DataTable, type Column } from '@/components/admin/DataTable'
 import { BreakEvenMeter } from '@/components/shared/BreakEvenMeter'
 import { StatusPill } from '@/components/shared/badges'
@@ -55,7 +55,7 @@ export default function Events() {
       cell: (e) => (
         <div className="min-w-0">
           <p className="truncate font-medium text-ink">{e.title}</p>
-          <p className="truncate font-mono text-[11.5px] text-muted">/{e.slug}</p>
+          <p className="truncate font-mono text-xs text-muted">/{e.slug}</p>
         </div>
       ),
     },
@@ -67,7 +67,7 @@ export default function Events() {
         <span className="whitespace-nowrap">
           {fmtDate(e.date, 'MMM d, yyyy')}
           {e.endDate ? (
-            <span className="block text-[12px] text-muted">to {fmtDate(e.endDate, 'MMM d')}</span>
+            <span className="block text-sm text-muted">to {fmtDate(e.endDate, 'MMM d')}</span>
           ) : null}
         </span>
       ),
@@ -130,18 +130,18 @@ export default function Events() {
   ]
 
   return (
-    <>
-      <PageHeader
-        title="Events"
-        subtitle="Every festival carries a published budget — devotees see the same meter you do."
-        actions={
-          <Link to="/events/new" className={buttonVariants({})}>
-            <Plus />
-            New event
-          </Link>
-        }
-      />
-
+    <PageShell
+      toolbar={<Chips items={FILTERS} value={filter} onChange={setFilter} />}
+      eyebrow="Programme"
+      title="Events"
+      description="Every festival carries a published budget — devotees see the same meter you do."
+      actions={
+        <Link to="/events/new" className={buttonVariants({})}>
+          <Plus />
+          New event
+        </Link>
+      }
+    >
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Events in view" value={events.length} sub="Across the temple year" />
         <StatTile
@@ -164,8 +164,6 @@ export default function Events() {
           tone="brand"
         />
       </div>
-
-      <Chips items={FILTERS} value={filter} onChange={setFilter} className="mb-4" />
 
       {loading ? (
         <LoadingSkeleton variant="table" rows={8} />
@@ -198,11 +196,11 @@ export default function Events() {
           </>
         }
       >
-        <p className="text-[13.5px] text-muted">
+        <p className="text-base text-muted">
           {confirmDelete?.rsvpCount} devotees have already RSVP’d. They will not be notified
           automatically in this prototype.
         </p>
       </Dialog>
-    </>
+    </PageShell>
   )
 }

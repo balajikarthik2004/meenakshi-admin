@@ -41,15 +41,15 @@ export function FamilyTreeEditor({
           detail="Add your spouse, children and parents so their names can be included in every sankalpam."
         />
       ) : (
-        <ul className="divide-y divide-line rounded-[10px] border border-line bg-card">
+        <ul className="divide-y divide-line rounded-[var(--radius-lg)] border border-line bg-card">
           {members.map((m, i) => (
             <li key={`${m.name}-${i}`} className="flex items-center gap-3 p-3">
-              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-tint text-[12px] font-semibold text-brand-600">
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-tint text-sm font-semibold text-brand-600">
                 {m.name.slice(0, 1).toUpperCase()}
               </span>
               <div className="min-w-0 flex-1">
-                <p className="truncate text-[13.5px] font-medium text-ink">{m.name}</p>
-                <p className="truncate text-[12px] text-muted">
+                <p className="truncate text-base font-medium text-ink">{m.name}</p>
+                <p className="truncate text-sm text-muted">
                   {[m.nakshatra, m.gothra && `${m.gothra} gothra`].filter(Boolean).join(' · ') ||
                     'No nakshatra recorded'}
                 </p>

@@ -147,51 +147,48 @@ export function MetricCard({
     tone === 'leaf'
       ? 'before:bg-leaf-500'
       : tone === 'gold'
-        ? 'before:bg-saffron-400'
+        ? 'before:bg-saffron-500'
         : tone === 'brand'
           ? 'before:bg-brand-500'
           : 'before:bg-line'
+
+  const chip =
+    tone === 'leaf'
+      ? 'bg-leaf-500/[0.11] text-leaf-600 ring-leaf-500/18'
+      : tone === 'gold'
+        ? 'bg-gold-500/[0.13] text-gold-600 ring-gold-500/20'
+        : tone === 'brand'
+          ? 'bg-brand-500/[0.09] text-brand-600 ring-brand-500/15'
+          : 'bg-tint text-muted ring-line'
 
   return (
     <div
       className={cn(
         // A 3px rail on the left carries the tone, so the card body stays white and the
         // row reads as one band of figures rather than four separately tinted boxes.
-        'relative overflow-hidden rounded-[10px] border border-line bg-card py-3 pl-4 pr-3.5 shadow-[var(--shadow-sm)]',
+        'relative flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-hairline bg-card py-3.5 pl-4 pr-3.5 shadow-[var(--shadow-sm)]',
         'before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:content-[""]',
         accent,
         className,
       )}
     >
-      <div className="flex items-center justify-between gap-2">
-        <p className="truncate text-[10.5px] font-semibold tracking-[0.11em] uppercase text-muted">
-          {label}
-        </p>
-        {Icon ? <Icon className="size-3.5 shrink-0 text-muted/70" /> : null}
+      <div className="flex items-start justify-between gap-2">
+        <p className="eyebrow min-w-0 truncate">{label}</p>
+        {/* The bare 14px icon read as a stray glyph next to the label. In a chip it
+            matches the tone rail and gives the tile a fixed top-right anchor. */}
+        {Icon ? (
+          <span
+            className={cn('grid size-7 shrink-0 place-items-center rounded-[7px] ring-1', chip)}
+          >
+            <Icon className="size-[15px]" />
+          </span>
+        ) : null}
       </div>
 
-      <div className="mt-1.5 flex items-end justify-between gap-3">
-        <div className="min-w-0">
-          <p className="font-serif text-[27px] leading-none text-ink">{value}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2">
-            {sub ? <p className="text-[12px] leading-tight text-muted">{sub}</p> : null}
-            {trend ? (
-              <span
-                className={cn(
-                  'inline-flex items-center gap-0.5 text-[11.5px] font-medium',
-                  trend.direction === 'up' ? 'text-leaf-500' : 'text-brand-500',
-                )}
-              >
-                {trend.direction === 'up' ? (
-                  <TrendingUp className="size-3" />
-                ) : (
-                  <TrendingDown className="size-3" />
-                )}
-                {trend.value}
-              </span>
-            ) : null}
-          </div>
-        </div>
+      {/* The figure stays where the eye expects it — directly under the label — and the
+          sparkline shares its baseline. */}
+      <div className="mt-2.5 flex items-end justify-between gap-3">
+        <p className="stat-figure min-w-0">{value}</p>
 
         {/* The sparkline sits beside the number rather than under it — same information,
             roughly half the card height, so the row stops stretching to match it. */}
@@ -206,6 +203,31 @@ export function MetricCard({
               </LineChart>
             </ResponsiveContainer>
           </div>
+        ) : null}
+      </div>
+
+      {/* It is the caption that absorbs the slack, not the number. `mt-auto` here holds
+          every caption in the row on one line along the bottom edge while the figures
+          stay tucked under their labels; putting it on the figure instead opened a band
+          of dead white between label and number on any tile shorter than its neighbour. */}
+      <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2">
+        {sub ? <p className="text-sm leading-tight text-muted">{sub}</p> : null}
+        {trend ? (
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 rounded-full px-1.5 py-px text-xs font-bold',
+              trend.direction === 'up'
+                ? 'bg-leaf-500/10 text-leaf-600'
+                : 'bg-brand-500/[0.08] text-brand-600',
+            )}
+          >
+            {trend.direction === 'up' ? (
+              <TrendingUp className="size-3" />
+            ) : (
+              <TrendingDown className="size-3" />
+            )}
+            {trend.value}
+          </span>
         ) : null}
       </div>
     </div>

@@ -20,10 +20,7 @@ export function Tabs({
   className?: string
 }) {
   return (
-    <div
-      role="tablist"
-      className={cn('flex gap-1 overflow-x-auto border-b border-line', className)}
-    >
+    <div role="tablist" className={cn('scroll-x-clean flex gap-4 overflow-x-auto', className)}>
       {items.map((t) => {
         const active = t.key === value
         return (
@@ -34,15 +31,24 @@ export function Tabs({
             aria-selected={active}
             onClick={() => onChange(t.key)}
             className={cn(
-              '-mb-px whitespace-nowrap border-b-2 px-3 py-2.5 text-[13.5px] font-medium transition-colors',
+              'flex items-center gap-1.5 whitespace-nowrap border-b-2 pb-2.5 pt-1 text-sm font-semibold transition-colors',
               active
                 ? 'border-brand-500 text-brand-600'
-                : 'border-transparent text-muted hover:text-ink',
+                : 'border-transparent text-muted hover:border-line hover:text-ink',
             )}
           >
             {t.label}
+            {/* The count is a chip, not a trailing number — at 11px beside a label it
+                was reading as part of the tab name. */}
             {typeof t.count === 'number' ? (
-              <span className="ml-1.5 text-[11.5px] text-muted">{t.count}</span>
+              <span
+                className={cn(
+                  'rounded-full px-1.5 py-px text-2xs font-bold tabular-nums',
+                  active ? 'bg-brand-500/10 text-brand-600' : 'bg-ink/[0.06] text-muted',
+                )}
+              >
+                {t.count}
+              </span>
             ) : null}
           </button>
         )
@@ -64,7 +70,7 @@ export function Chips({
   className?: string
 }) {
   return (
-    <div className={cn('flex flex-wrap gap-2', className)}>
+    <div className={cn('flex flex-wrap gap-1.5', className)}>
       {items.map((c) => {
         const active = c.key === value
         return (
@@ -74,10 +80,10 @@ export function Chips({
             aria-pressed={active}
             onClick={() => onChange(c.key)}
             className={cn(
-              'rounded-full border px-3.5 py-1.5 text-[13px] font-medium transition-colors active:scale-[.97]',
+              'rounded-full border px-3 py-1 text-sm font-semibold transition-colors active:scale-[.97]',
               active
                 ? 'border-brand-500 bg-brand-500 text-white'
-                : 'border-line bg-card text-muted hover:border-brand-300 hover:text-ink',
+                : 'border-line bg-card text-muted hover:border-muted hover:text-ink',
             )}
           >
             {c.label}

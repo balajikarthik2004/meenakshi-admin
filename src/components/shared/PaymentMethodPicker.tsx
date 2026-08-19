@@ -40,7 +40,7 @@ export function PaymentMethodPicker({
             aria-checked={active}
             onClick={() => onChange(key)}
             className={cn(
-              'flex items-start gap-2.5 rounded-[10px] border p-3 text-left transition-colors active:scale-[.99]',
+              'flex items-start gap-2.5 rounded-[var(--radius-lg)] border p-3 text-left transition-colors active:scale-[.99]',
               active
                 ? 'border-brand-500 bg-brand-500/[0.06] ring-2 ring-brand-500/20'
                 : 'border-line bg-card hover:border-brand-300',
@@ -50,13 +50,13 @@ export function PaymentMethodPicker({
               className={cn('mt-0.5 size-4 shrink-0', active ? 'text-brand-500' : 'text-muted')}
             />
             <span className="min-w-0">
-              <span className="block text-[13.5px] font-medium text-ink">{label}</span>
-              <span className="block truncate text-[12px] text-muted">{detail}</span>
+              <span className="block text-base font-medium text-ink">{label}</span>
+              <span className="block truncate text-sm text-muted">{detail}</span>
             </span>
           </button>
         )
       })}
-      <p className="col-span-full text-[12px] text-muted">
+      <p className="col-span-full text-sm text-muted">
         Prototype only — no card is charged and no payment processor is contacted.
       </p>
     </div>

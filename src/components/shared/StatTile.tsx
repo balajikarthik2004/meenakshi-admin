@@ -12,18 +12,23 @@ export interface StatTileProps {
   className?: string
 }
 
-const TONE_RING: Record<NonNullable<StatTileProps['tone']>, string> = {
-  default: 'border-line bg-card',
-  brand: 'border-brand-500/25 bg-brand-500/[0.06]',
-  gold: 'border-gold-500/30 bg-gold-500/[0.08]',
-  leaf: 'border-leaf-500/25 bg-leaf-500/[0.07]',
+/**
+ * Tones colour the icon chip and a hairline rail, not the card body. Four fully tinted
+ * boxes in a row compete with each other and with the figures inside them; a white body
+ * with a coloured edge lets the row read as one band of numbers.
+ */
+const TONE_RAIL: Record<NonNullable<StatTileProps['tone']>, string> = {
+  default: 'before:bg-line',
+  brand: 'before:bg-brand-500',
+  gold: 'before:bg-saffron-500',
+  leaf: 'before:bg-leaf-500',
 }
 
 const TONE_ICON: Record<NonNullable<StatTileProps['tone']>, string> = {
-  default: 'bg-tint text-brand-500',
-  brand: 'bg-brand-500/12 text-brand-600',
-  gold: 'bg-gold-500/15 text-gold-600',
-  leaf: 'bg-leaf-500/12 text-leaf-600',
+  default: 'bg-tint text-muted ring-line',
+  brand: 'bg-brand-500/[0.09] text-brand-600 ring-brand-500/15',
+  gold: 'bg-gold-500/[0.13] text-gold-600 ring-gold-500/20',
+  leaf: 'bg-leaf-500/[0.11] text-leaf-600 ring-leaf-500/18',
 }
 
 export function StatTile({
@@ -38,40 +43,52 @@ export function StatTile({
   return (
     <div
       className={cn(
-        'rounded-[10px] border p-4 shadow-[var(--shadow-sm)]',
-        TONE_RING[tone],
+        'relative flex h-full flex-col overflow-hidden rounded-[var(--radius-lg)] border border-hairline bg-card py-3.5 pl-4 pr-3.5 shadow-[var(--shadow-sm)]',
+        'before:absolute before:inset-y-0 before:left-0 before:w-[3px] before:content-[""]',
+        TONE_RAIL[tone],
         className,
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <p className="text-[11.5px] font-semibold uppercase tracking-[0.08em] text-muted">
-          {label}
-        </p>
+        <p className="eyebrow min-w-0 truncate">{label}</p>
         {Icon ? (
-          <span className={cn('grid size-7 place-items-center rounded-md', TONE_ICON[tone])}>
-            <Icon className="size-4" />
-          </span>
-        ) : null}
-      </div>
-      <p className="mt-2 font-serif text-[26px] leading-none text-ink">{value}</p>
-      <div className="mt-1.5 flex items-center gap-2">
-        {sub ? <p className="text-[12.5px] text-muted">{sub}</p> : null}
-        {trend ? (
           <span
             className={cn(
-              'inline-flex items-center gap-1 text-[12px] font-medium',
-              trend.direction === 'up' ? 'text-leaf-500' : 'text-brand-500',
+              'grid size-7 shrink-0 place-items-center rounded-[7px] ring-1',
+              TONE_ICON[tone],
             )}
           >
-            {trend.direction === 'up' ? (
-              <TrendingUp className="size-3.5" />
-            ) : (
-              <TrendingDown className="size-3.5" />
-            )}
-            {trend.value}
+            <Icon className="size-[15px]" />
           </span>
         ) : null}
       </div>
+
+      <p className="stat-figure mt-2.5">{value}</p>
+
+      {/* The caption absorbs the slack, not the number: `mt-auto` holds every caption in
+          the row along one bottom edge while the figures stay tucked under their labels. */}
+      {sub || trend ? (
+        <div className="mt-auto flex flex-wrap items-center gap-x-2 gap-y-1 pt-2">
+          {sub ? <p className="text-sm leading-tight text-muted">{sub}</p> : null}
+          {trend ? (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 rounded-full px-1.5 py-px text-xs font-bold',
+                trend.direction === 'up'
+                  ? 'bg-leaf-500/10 text-leaf-600'
+                  : 'bg-brand-500/[0.08] text-brand-600',
+              )}
+            >
+              {trend.direction === 'up' ? (
+                <TrendingUp className="size-3" />
+              ) : (
+                <TrendingDown className="size-3" />
+              )}
+              {trend.value}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   )
 }

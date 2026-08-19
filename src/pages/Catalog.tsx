@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { EyeOff, Plus, SquarePen, Trash2 } from 'lucide-react'
 import type { Cadence, PujaCatalogItem, PujaType } from '@/lib/data/types'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { DataTable, type Column } from '@/components/admin/DataTable'
 import { PujaCard } from '@/components/shared/PujaCard'
 import { LoadingSkeleton } from '@/components/shared/states'
@@ -83,7 +83,7 @@ export default function Catalog() {
       cell: (p) => (
         <div className="min-w-0">
           <p className="truncate font-medium text-ink">{p.name}</p>
-          <p className="truncate text-[12px] text-muted">{p.recurringRule}</p>
+          <p className="truncate text-sm text-muted">{p.recurringRule}</p>
         </div>
       ),
     },
@@ -155,18 +155,17 @@ export default function Catalog() {
   ]
 
   return (
-    <>
-      <PageHeader
-        title="Puja catalogue"
-        subtitle={`${items.length} pujas offered · ${items.filter((p) => p.active !== false).length} live on the devotee site`}
-        actions={
-          <Button onClick={openNew}>
-            <Plus />
-            New puja
-          </Button>
-        }
-      />
-
+    <PageShell
+      eyebrow="Operations"
+      title="Puja catalogue"
+      description={`${items.length} pujas offered · ${items.filter((p) => p.active !== false).length} live on the devotee site`}
+      actions={
+        <Button onClick={openNew}>
+          <Plus />
+          New puja
+        </Button>
+      }
+    >
       {loading ? (
         <LoadingSkeleton variant="table" rows={8} />
       ) : (
@@ -296,11 +295,9 @@ export default function Catalog() {
           </div>
 
           <div className="lg:sticky lg:top-0">
-            <p className="mb-2 text-[11.5px] font-semibold uppercase tracking-[0.08em] text-muted">
-              Devotee preview
-            </p>
+            <p className="eyebrow mb-2">Devotee preview</p>
             <PujaCard puja={draft} to="#" />
-            <p className="mt-2 text-[12px] leading-relaxed text-muted">
+            <p className="mt-2 text-sm leading-relaxed text-muted">
               This is exactly how the card renders in the devotee catalogue.
             </p>
           </div>
@@ -324,11 +321,11 @@ export default function Catalog() {
           </>
         }
       >
-        <p className="text-[13.5px] text-muted">
+        <p className="text-base text-muted">
           Consider deactivating instead — that hides it from the devotee catalogue while keeping the
           record intact for the P&amp;L.
         </p>
       </Dialog>
-    </>
+    </PageShell>
   )
 }

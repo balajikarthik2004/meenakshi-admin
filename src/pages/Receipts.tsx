@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Download, FileText, Mail, Printer } from 'lucide-react'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { DataTable, type Column } from '@/components/admin/DataTable'
 import { TaxReceiptPreview } from '@/components/shared/TaxReceiptPreview'
 import { StatTile } from '@/components/shared/StatTile'
@@ -61,7 +61,7 @@ export default function Receipts() {
       cell: (r) => (
         <div className="min-w-0">
           <p className="truncate font-medium text-ink">{r.user.name}</p>
-          <p className="truncate text-[12px] text-muted">{r.user.email}</p>
+          <p className="truncate text-sm text-muted">{r.user.email}</p>
         </div>
       ),
     },
@@ -108,64 +108,63 @@ export default function Receipts() {
   ]
 
   return (
-    <>
-      <PageHeader
-        title="Bulk tax receipts"
-        subtitle={`${rows.length} devotees with recorded contributions in ${year}`}
-        actions={
-          <>
-            <Select
-              value={year}
-              onChange={(e) => {
-                setYear(Number(e.target.value))
-                setPreview(null)
-              }}
-              aria-label="Statement year"
-              className="w-[110px]"
-            >
-              {years.map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </Select>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() =>
-                downloadCSV(
-                  `meenakshi-contributions-${year}.csv`,
-                  rows.map((r) => ({
-                    Devotee: r.user.name,
-                    Email: r.user.email,
-                    City: r.user.city,
-                    Donations: r.donations,
-                    Sponsorships: r.sponsorships,
-                    Total: r.total,
-                  })),
-                )
-              }
-              disabled={rows.length === 0}
-            >
-              <Download />
-              Export CSV
-            </Button>
-            <Button
-              size="sm"
-              onClick={() =>
-                toast(`${rows.length} statements queued`, {
-                  detail: `Prototype only — no email is sent. Real build would post ${year} PDFs to each devotee.`,
-                })
-              }
-              disabled={rows.length === 0}
-            >
-              <Mail />
-              Email all statements
-            </Button>
-          </>
-        }
-      />
-
+    <PageShell
+      eyebrow="Money"
+      title="Bulk tax receipts"
+      description={`${rows.length} devotees with recorded contributions in ${year}`}
+      actions={
+        <>
+          <Select
+            value={year}
+            onChange={(e) => {
+              setYear(Number(e.target.value))
+              setPreview(null)
+            }}
+            aria-label="Statement year"
+            className="w-[110px]"
+          >
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </Select>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              downloadCSV(
+                `meenakshi-contributions-${year}.csv`,
+                rows.map((r) => ({
+                  Devotee: r.user.name,
+                  Email: r.user.email,
+                  City: r.user.city,
+                  Donations: r.donations,
+                  Sponsorships: r.sponsorships,
+                  Total: r.total,
+                })),
+              )
+            }
+            disabled={rows.length === 0}
+          >
+            <Download />
+            Export CSV
+          </Button>
+          <Button
+            size="sm"
+            onClick={() =>
+              toast(`${rows.length} statements queued`, {
+                detail: `Prototype only — no email is sent. Real build would post ${year} PDFs to each devotee.`,
+              })
+            }
+            disabled={rows.length === 0}
+          >
+            <Mail />
+            Email all statements
+          </Button>
+        </>
+      }
+    >
       <div className="mb-4 grid gap-3 sm:grid-cols-3">
         <StatTile
           label={`${year} total`}
@@ -206,9 +205,9 @@ export default function Receipts() {
           )}
         </div>
 
-        <Card className="xl:sticky xl:top-6">
+        <Card className="xl:sticky xl:top-[calc(var(--page-chrome-h,0px)+1.25rem)]">
           <div className="flex items-center justify-between gap-3 border-b border-line p-4">
-            <h2 className="font-serif text-[18px]">Receipt preview</h2>
+            <h2 className="font-serif text-lg text-ink">Receipt preview</h2>
             {preview ? (
               <Button variant="ghost" size="sm" onClick={() => window.print()}>
                 <Printer />
@@ -240,6 +239,6 @@ export default function Receipts() {
           </div>
         </Card>
       </div>
-    </>
+    </PageShell>
   )
 }

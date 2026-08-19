@@ -36,7 +36,7 @@ export function EventCard({
   return (
     <article
       className={cn(
-        'group flex flex-col overflow-hidden rounded-[10px] border border-line bg-card shadow-[var(--shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:border-saffron-300/70 hover:shadow-[var(--shadow)]',
+        'group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-line bg-card shadow-[var(--shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:border-hairline hover:shadow-[var(--shadow)]',
         className,
       )}
     >
@@ -49,19 +49,19 @@ export function EventCard({
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-900/70 to-transparent" />
 
         {/* Date medallion, in the temple's brass */}
-        <div className="absolute left-3.5 top-3.5 rounded-[8px] border border-saffron-300/50 bg-brand-800/85 px-2.5 py-1 text-center backdrop-blur">
-          <span className="block text-[9.5px] font-semibold uppercase tracking-[0.14em] text-saffron-300">
+        <div className="absolute left-3.5 top-3.5 rounded-[8px] border border-hairline bg-brand-800/85 px-2.5 py-1 text-center backdrop-blur">
+          <span className="block text-2xs font-semibold uppercase tracking-[0.14em] text-saffron-400">
             {fmtDate(date, 'MMM')}
           </span>
-          <span className="block font-serif text-[19px] leading-none text-white">
+          <span className="block font-bold text-xl leading-none text-white">
             {fmtDate(date, 'd')}
           </span>
         </div>
 
         <span
           className={cn(
-            'absolute right-3 top-3 rounded-full px-2.5 py-0.5 text-[11px] font-semibold',
-            event.ticketPrice ? 'bg-saffron-400/95 text-brand-800' : 'bg-leaf-500/95 text-white',
+            'absolute right-3 top-3 rounded-full px-2.5 py-0.5 text-xs font-semibold',
+            event.ticketPrice ? 'bg-saffron-500 text-brand-800' : 'bg-leaf-500/95 text-white',
           )}
         >
           {event.ticketPrice ? money(event.ticketPrice) : 'Free'}
@@ -69,8 +69,8 @@ export function EventCard({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
-        <h3 className="font-serif text-[19px] leading-snug">{event.title}</h3>
-        <p className="line-clamp-2 text-[13.5px] leading-relaxed text-muted">{event.description}</p>
+        <h3 className="font-bold text-xl leading-snug">{event.title}</h3>
+        <p className="line-clamp-2 text-base leading-relaxed text-muted">{event.description}</p>
 
         {showMeter ? (
           <BreakEvenMeter
@@ -83,7 +83,7 @@ export function EventCard({
         ) : null}
 
         <div className="mt-auto flex items-center justify-between gap-3 border-t border-line pt-3">
-          <span className="inline-flex items-center gap-1.5 text-[12.5px] text-muted">
+          <span className="inline-flex items-center gap-1.5 text-sm text-muted">
             <Users className="size-3.5 text-saffron-500" />
             {event.rsvpCount} attending
           </span>

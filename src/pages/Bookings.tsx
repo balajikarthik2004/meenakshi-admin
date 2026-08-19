@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Download, Pause, Play, X } from 'lucide-react'
 import type { Booking, User } from '@/lib/data/types'
-import { PageHeader } from '@/components/layout/AdminLayout'
+import { PageShell } from '@/components/layout/PageShell'
 import { DataTable, type Column } from '@/components/admin/DataTable'
 import { StatusPill } from '@/components/shared/badges'
 import { LoadingSkeleton } from '@/components/shared/states'
@@ -59,7 +59,7 @@ export default function Bookings() {
       cell: (r) => (
         <div className="min-w-0">
           <p className="truncate font-medium text-ink">{r.devotee?.name ?? 'Unknown'}</p>
-          <p className="truncate text-[12px] text-muted">{r.devotee?.phone}</p>
+          <p className="truncate text-sm text-muted">{r.devotee?.phone}</p>
         </div>
       ),
     },
@@ -72,7 +72,7 @@ export default function Bookings() {
         return (
           <div className="min-w-0">
             <p className="truncate">{p?.name}</p>
-            <p className="truncate text-[12px] text-muted">{p?.deity}</p>
+            <p className="truncate text-sm text-muted">{p?.deity}</p>
           </div>
         )
       },
@@ -183,56 +183,58 @@ export default function Bookings() {
       })),
     )
 
-  return (
-    <>
-      <PageHeader
-        title="All bookings"
-        subtitle={`${rows.length} sponsorship${rows.length === 1 ? '' : 's'} · ${money(rows.reduce((s, r) => s + r.booking.amount, 0))} committed`}
-        actions={
-          <Button variant="ghost" size="sm" onClick={exportCSV} disabled={rows.length === 0}>
-            <Download />
-            Export CSV
-          </Button>
-        }
-      />
-
-      <Toolbar
-        activeCount={[status, puja, from, to].filter(Boolean).length}
-        onClear={() => {
-          setStatus('')
-          setPuja('')
-          setFrom('')
-          setTo('')
-        }}
+  const toolbar = (
+    <Toolbar
+      activeCount={[status, puja, from, to].filter(Boolean).length}
+      onClear={() => {
+        setStatus('')
+        setPuja('')
+        setFrom('')
+        setTo('')
+      }}
+    >
+      <ToolbarSelect
+        value={status}
+        onChange={(e) => setStatus(e.target.value)}
+        aria-label="Filter by status"
       >
-        <ToolbarSelect
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          aria-label="Filter by status"
-        >
-          <option value="">All statuses</option>
-          {['active', 'paused', 'completed', 'cancelled'].map((v) => (
-            <option key={v} value={v}>
-              {titleCase(v)}
-            </option>
-          ))}
-        </ToolbarSelect>
-        <ToolbarSelect
-          value={puja}
-          onChange={(e) => setPuja(e.target.value)}
-          aria-label="Filter by puja"
-        >
-          <option value="">All pujas</option>
-          {PUJA_CATALOG.map((pj) => (
-            <option key={pj.id} value={pj.id}>
-              {pj.name}
-            </option>
-          ))}
-        </ToolbarSelect>
-        <ToolbarDate label="Started after" value={from} onChange={(e) => setFrom(e.target.value)} />
-        <ToolbarDate label="before" value={to} onChange={(e) => setTo(e.target.value)} />
-      </Toolbar>
+        <option value="">All statuses</option>
+        {['active', 'paused', 'completed', 'cancelled'].map((v) => (
+          <option key={v} value={v}>
+            {titleCase(v)}
+          </option>
+        ))}
+      </ToolbarSelect>
+      <ToolbarSelect
+        value={puja}
+        onChange={(e) => setPuja(e.target.value)}
+        aria-label="Filter by puja"
+      >
+        <option value="">All pujas</option>
+        {PUJA_CATALOG.map((pj) => (
+          <option key={pj.id} value={pj.id}>
+            {pj.name}
+          </option>
+        ))}
+      </ToolbarSelect>
+      <ToolbarDate label="Started after" value={from} onChange={(e) => setFrom(e.target.value)} />
+      <ToolbarDate label="before" value={to} onChange={(e) => setTo(e.target.value)} />
+    </Toolbar>
+  )
 
+  return (
+    <PageShell
+      toolbar={toolbar}
+      eyebrow="Operations"
+      title="All bookings"
+      description={`${rows.length} sponsorship${rows.length === 1 ? '' : 's'} · ${money(rows.reduce((s, r) => s + r.booking.amount, 0))} committed`}
+      actions={
+        <Button variant="ghost" size="sm" onClick={exportCSV} disabled={rows.length === 0}>
+          <Download />
+          Export CSV
+        </Button>
+      }
+    >
       {loading ? (
         <LoadingSkeleton variant="table" rows={8} />
       ) : (
@@ -245,6 +247,6 @@ export default function Bookings() {
           empty={{ title: 'No bookings match', detail: 'Widen the status, puja or date filters.' }}
         />
       )}
-    </>
+    </PageShell>
   )
 }

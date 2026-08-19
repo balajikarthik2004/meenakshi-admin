@@ -21,7 +21,7 @@ export function PujaCard({
   return (
     <article
       className={cn(
-        'group flex flex-col overflow-hidden rounded-[10px] border border-line bg-card shadow-[var(--shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:border-saffron-300/70 hover:shadow-[var(--shadow)]',
+        'group flex flex-col overflow-hidden rounded-[var(--radius-lg)] border border-line bg-card shadow-[var(--shadow-sm)] transition-all duration-300 hover:-translate-y-0.5 hover:border-hairline hover:shadow-[var(--shadow)]',
         className,
       )}
     >
@@ -32,20 +32,20 @@ export function PujaCard({
           label={`${puja.deity} — ${puja.name}`}
         />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-brand-900/75 to-transparent" />
-        <span className="absolute bottom-2.5 left-3.5 font-serif text-[15px] text-white drop-shadow">
+        <span className="absolute bottom-2.5 left-3.5 font-bold text-md text-white drop-shadow">
           {puja.deity}
         </span>
-        <span className="absolute right-3 top-3 rounded-full bg-saffron-400/95 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-brand-800">
+        <span className="absolute right-3 top-3 rounded-full bg-saffron-500 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide text-brand-800">
           {titleCase(puja.type)}
         </span>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-2 p-4">
-        <h3 className="font-serif text-[19px] leading-snug text-ink">{puja.name}</h3>
+        <h3 className="font-bold text-xl leading-snug text-ink">{puja.name}</h3>
 
-        <p className="line-clamp-2 text-[13.5px] leading-relaxed text-muted">{puja.description}</p>
+        <p className="line-clamp-2 text-base leading-relaxed text-muted">{puja.description}</p>
 
-        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-[12px] text-muted">
+        <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 pt-2 text-sm text-muted">
           <span className="inline-flex items-center gap-1.5">
             <Repeat className="size-3.5 text-saffron-500" />
             {puja.recurringRule ?? titleCase(puja.defaultCadence)}
@@ -57,9 +57,9 @@ export function PujaCard({
         </div>
 
         <div className="mt-2.5 flex items-center justify-between gap-3 border-t border-line pt-3">
-          <p className="font-serif text-[22px] leading-none text-ink">
+          <p className="font-bold text-xl leading-none text-ink">
             {money(puja.basePrice)}
-            <span className="ml-1.5 font-sans text-[11.5px] text-muted">
+            <span className="ml-1.5 font-sans text-xs text-muted">
               {puja.defaultCadence === 'one-time' ? 'one-time' : 'per year'}
             </span>
           </p>
