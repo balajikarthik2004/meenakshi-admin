@@ -296,24 +296,24 @@ export default function Donations() {
     >
       <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile
-          label="Filtered total"
+          label="Total Donation"
           value={money(total)}
           sub={`${rows.length} gifts`}
           tone="leaf"
         />
-        <StatTile
+        {/* <StatTile
           label="Receipts pending"
           value={pendingReceipts}
           sub="Not yet acknowledged"
           tone="gold"
-        />
+        /> */}
         <StatTile
           label="Recurring donors"
           value={rows.filter((r) => r.donation.isRecurring).length}
           sub="Standing orders in this view"
         />
         <StatTile
-          label="Average gift"
+          label="Average Donation"
           value={money(rows.length ? Math.round(total / rows.length) : 0)}
           sub="Across the filtered set"
           tone="brand"

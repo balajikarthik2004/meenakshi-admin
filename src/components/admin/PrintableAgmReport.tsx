@@ -72,7 +72,7 @@ export function PrintableAgmReport({
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-b border-line">
-              {['Puja', 'Sponsors', 'Collected', 'Direct cost', 'Net'].map((h, i) => (
+              {['Puja', 'Sponsors', 'Collected', 'Expenses', 'Net'].map((h, i) => (
                 <th
                   key={h}
                   className={`py-1.5 text-2xs font-semibold uppercase tracking-[0.07em] text-muted ${i === 0 ? 'text-left' : 'text-right'}`}

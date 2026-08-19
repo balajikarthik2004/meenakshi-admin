@@ -85,7 +85,7 @@ export default function BookingsToday() {
       }
     >
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="On the roster" value={rows.length} sub="Sponsored occurrences" />
+        <StatTile label="Total Scheduled" value={rows.length} sub="Sponsored occurrences" />
         <StatTile label="Still to perform" value={pending} sub="Awaiting the priest" tone="brand" />
         <StatTile label="Completed" value={completed} sub="Marked done" tone="leaf" />
         <StatTile label="Skipped" value={skipped} sub="Rescheduled or missed" tone="gold" />

@@ -64,7 +64,7 @@ const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
     items: [
       { to: '/events', label: 'Events', Icon: CalendarDays, end: true },
       { to: '/calendar', label: 'Calendar CMS', Icon: CalendarDays },
-      { to: '/facility', label: 'Facility bookings', Icon: Building2 },
+      // { to: '/facility', label: 'Facility bookings', Icon: Building2 },
       { to: '/settings', label: 'Settings', Icon: Settings },
     ],
   },
@@ -195,7 +195,10 @@ export function AdminLayout() {
         <Link to="/dashboard" className="mb-4 flex items-center gap-2.5 px-1">
           <Logo size={32} />
           <span className="min-w-0 leading-tight">
-            <span className="wordmark block truncate text-md text-ink">Sri Meenakshi</span>
+            <span className="wordmark block truncate text-md text-ink">Sri Meenakshi 
+                <br />
+                Temple Society
+              </span>
             <span className="block text-2xs uppercase tracking-[0.12em] text-muted">
               Operations console
             </span>

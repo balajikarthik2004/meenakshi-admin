@@ -27,7 +27,7 @@ export function PnLTable({ rows, className }: { rows: PujaPnLRow[]; className?: 
             <TH>Puja</TH>
             <TH className="text-right">Sponsors</TH>
             <TH className="text-right">Collected</TH>
-            <TH className="text-right">Direct cost</TH>
+            <TH className="text-right">Expenses</TH>
             <TH className="text-right">Net</TH>
             <TH>Margin</TH>
           </TR>

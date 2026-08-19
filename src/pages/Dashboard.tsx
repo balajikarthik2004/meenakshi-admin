@@ -193,7 +193,7 @@ export default function Dashboard() {
       </div>
 
       {/* Row 4 — today's roster */}
-      <section className="mt-6">
+      {/* <section className="mt-6">
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2 border-b border-line-soft pb-2">
           <h2 className="font-serif text-lg text-ink">Today at the temple</h2>
           <Link to="/bookings/today" className="text-sm font-bold text-brand-600 hover:underline">
@@ -201,7 +201,7 @@ export default function Dashboard() {
           </Link>
         </div>
         <TodaysArchanaList rows={rows.slice(0, 8)} onComplete={complete} onSkip={skip} />
-      </section>
+      </section> */}
     </PageShell>
   )
 }
