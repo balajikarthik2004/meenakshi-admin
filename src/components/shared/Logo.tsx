@@ -8,11 +8,9 @@ import { cn } from '@/lib/utils'
 export function Logo({
   className,
   size = 40,
-  onDark = false,
 }: {
   className?: string
   size?: number
-  onDark?: boolean
 }) {
   return (
     <img
