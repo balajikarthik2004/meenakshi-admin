@@ -14,11 +14,19 @@ import { useToast } from '@/components/ui/toast'
 import { issueTaxReceipts, listDevotees, listDonations } from '@/lib/data/api'
 import { DONATION_CATEGORIES } from '@/lib/data/mock'
 import { useAsync } from '@/lib/hooks'
+import { EVENT_BY_ID } from '@/lib/data/mock'
 import { downloadCSV, fmtDate, money, titleCase } from '@/lib/utils'
 
 interface Row {
   donation: Donation
   donor?: User
+}
+
+/** The festival a gift sponsors, and which heads it covers — blank for a plain gift. */
+function eventPurpose(d: Donation) {
+  const event = d.eventId ? EVENT_BY_ID.get(d.eventId) : undefined
+  if (!event) return ''
+  return d.eventItems?.length ? `${event.title} — ${d.eventItems.join(', ')}` : event.title
 }
 
 interface MatchResult {
@@ -162,14 +170,19 @@ export default function Donations() {
       header: 'Fund',
       sortValue: (r) => r.donation.category,
       cell: (r) => (
-        <span>
-          {titleCase(r.donation.category)}
-          {r.donation.isRecurring ? (
-            <Badge variant="gold" className="ml-2">
-              {titleCase(r.donation.recurringCadence ?? 'recurring')}
-            </Badge>
+        <div className="min-w-0">
+          <span>
+            {titleCase(r.donation.category)}
+            {r.donation.isRecurring ? (
+              <Badge variant="gold" className="ml-2">
+                {titleCase(r.donation.recurringCadence ?? 'recurring')}
+              </Badge>
+            ) : null}
+          </span>
+          {eventPurpose(r.donation) ? (
+            <p className="max-w-[30ch] truncate text-sm text-muted">{eventPurpose(r.donation)}</p>
           ) : null}
-        </span>
+        </div>
       ),
     },
     {
@@ -210,6 +223,8 @@ export default function Donations() {
         Date: fmtDate(r.donation.createdAt, 'yyyy-MM-dd'),
         Donor: r.donor?.name ?? 'Anonymous',
         Fund: titleCase(r.donation.category),
+        Festival: r.donation.eventId ? (EVENT_BY_ID.get(r.donation.eventId)?.title ?? '') : '',
+        Sponsored: r.donation.eventItems?.join('; ') ?? '',
         Amount: r.donation.amount,
         Method: r.donation.paymentMethod,
         Recurring: r.donation.isRecurring ? r.donation.recurringCadence : 'No',
@@ -391,8 +406,8 @@ export default function Donations() {
               ))}
             </ul>
             <p className="mt-3 text-sm italic text-muted">
-              Prototype matching is amount-only. The real build would match on payer name, date
-              window and reference number.
+              Matching is amount-only for now. Payer name, date window and reference number are not
+              yet compared.
             </p>
           </div>
         ) : null}

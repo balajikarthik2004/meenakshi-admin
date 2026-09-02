@@ -23,6 +23,16 @@ export function PrintableAgmReport({
     { collected: 0, cost: 0, net: 0 },
   )
 
+  const allocations = [...snapshot.allocations].sort((a, b) => b.targetAmount - a.targetAmount)
+  const allocTotals = allocations.reduce(
+    (a, r) => ({
+      target: a.target + r.targetAmount,
+      collected: a.collected + r.collectedAmount,
+      spent: a.spent + r.spentAmount,
+    }),
+    { target: 0, collected: 0, spent: 0 },
+  )
+
   return (
     <div className="print-area space-y-6 text-sm leading-relaxed text-ink">
       <header className="flex items-start justify-between gap-4 border-b-2 border-ink/20 pb-4">
@@ -67,7 +77,67 @@ export function PrintableAgmReport({
 
       <section>
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.09em] text-muted">
-          2 · Puja sponsorship profit &amp; loss
+          2 · Annual target by budget head
+        </h2>
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="border-b border-line">
+              {['Allocation', 'Share', 'Target', 'Raised', 'Spent', 'Funded'].map((h, i) => (
+                <th
+                  key={h}
+                  className={`py-1.5 text-2xs font-semibold uppercase tracking-[0.07em] text-muted ${i === 0 ? 'text-left' : 'text-right'}`}
+                >
+                  {h}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {allocations.map((a) => (
+              <tr key={a.key}>
+                <td className="py-1.5">{a.label}</td>
+                <td className="py-1.5 text-right tabular-nums">
+                  {allocTotals.target > 0
+                    ? `${((a.targetAmount / allocTotals.target) * 100).toFixed(1)}%`
+                    : '—'}
+                </td>
+                <td className="py-1.5 text-right tabular-nums">{money(a.targetAmount)}</td>
+                <td className="py-1.5 text-right tabular-nums">{money(a.collectedAmount)}</td>
+                <td className="py-1.5 text-right tabular-nums">{money(a.spentAmount)}</td>
+                <td className="py-1.5 text-right font-medium tabular-nums">
+                  {a.targetAmount > 0
+                    ? pct(Math.round((a.collectedAmount / a.targetAmount) * 100))
+                    : '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr className="border-t-2 border-ink/20">
+              <td className="py-2 font-medium">Total</td>
+              <td className="py-2 text-right font-medium tabular-nums">100.0%</td>
+              <td className="py-2 text-right font-medium tabular-nums">
+                {money(allocTotals.target)}
+              </td>
+              <td className="py-2 text-right font-medium tabular-nums">
+                {money(allocTotals.collected)}
+              </td>
+              <td className="py-2 text-right font-medium tabular-nums">
+                {money(allocTotals.spent)}
+              </td>
+              <td className="py-2 text-right font-medium tabular-nums">
+                {allocTotals.target > 0
+                  ? pct(Math.round((allocTotals.collected / allocTotals.target) * 100))
+                  : '—'}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.09em] text-muted">
+          3 · Puja sponsorship profit &amp; loss
         </h2>
         <table className="w-full border-collapse">
           <thead>
@@ -109,7 +179,7 @@ export function PrintableAgmReport({
 
       <section>
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.09em] text-muted">
-          3 · Festival break-even
+          4 · Festival break-even
         </h2>
         <table className="w-full border-collapse">
           <thead>
@@ -144,7 +214,7 @@ export function PrintableAgmReport({
 
       <section>
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-[0.09em] text-muted">
-          4 · Capital projects
+          5 · Capital projects
         </h2>
         <table className="w-full border-collapse">
           <thead>
@@ -181,7 +251,7 @@ export function PrintableAgmReport({
           Audited statements are available on request from the temple office.
         </p>
         <p className="mt-2 italic">
-          Prototype output — figures are generated mock data, not a real financial record.
+          Figures are generated sample data, not a real financial record.
         </p>
       </footer>
     </div>

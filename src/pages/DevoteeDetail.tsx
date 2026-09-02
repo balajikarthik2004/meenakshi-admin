@@ -4,7 +4,7 @@ import { Mail, MapPin, Phone, Save, SquarePen, Unlock } from 'lucide-react'
 import type { FamilyMember, User } from '@/lib/data/types'
 import { PageShell } from '@/components/layout/PageShell'
 import { FamilyTreeEditor } from '@/components/shared/FamilyTreeEditor'
-import { RoleBadge, StatusPill, TierBadge } from '@/components/shared/badges'
+import { RoleBadge, StatusPill /*, TierBadge */ } from '@/components/shared/badges'
 import { EmptyState, LoadingSkeleton } from '@/components/shared/states'
 import { StatTile } from '@/components/shared/StatTile'
 import { Avatar, Badge } from '@/components/ui/badge'
@@ -18,7 +18,7 @@ import { useToast } from '@/components/ui/toast'
 import {
   getDevoteeById,
   getFamilyTree,
-  getMembership,
+  // getMembership, // Membership temporarily disabled
   getMyBookings,
   listDonations,
   saveFamilyTree,
@@ -32,7 +32,8 @@ const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'bookings', label: 'Bookings' },
   { key: 'donations', label: 'Donations' },
-  { key: 'membership', label: 'Membership' },
+  // Membership temporarily disabled
+  // { key: 'membership', label: 'Membership' },
   { key: 'family', label: 'Family' },
   { key: 'notes', label: 'Notes' },
 ]
@@ -54,7 +55,7 @@ export default function DevoteeDetail() {
         getDevoteeById(id!),
         getMyBookings(id!),
         listDonations(id!),
-        getMembership(id!),
+        // getMembership(id!), // Membership temporarily disabled
         getFamilyTree(id!),
       ]),
     [id],
@@ -62,7 +63,8 @@ export default function DevoteeDetail() {
 
   useEffect(() => {
     if (data?.[0]) setForm(data[0])
-    if (data?.[4]) setMembers(data[4]!.members)
+    // Family tree moved from index 4 to 3 when membership left the tuple above.
+    if (data?.[3]) setMembers(data[3]!.members)
   }, [data])
 
   if (loading || !data) {
@@ -73,7 +75,8 @@ export default function DevoteeDetail() {
     )
   }
 
-  const [user, bookings, donations, membership, tree] = data
+  // Membership temporarily disabled — `membership` removed from the tuple above.
+  const [user, bookings, donations, tree] = data
 
   if (!user) {
     return (
@@ -122,7 +125,8 @@ export default function DevoteeDetail() {
           <Avatar initials={user.avatarInitials} className="size-8 text-sm" />
           <span className="truncate">{user.name}</span>
           <RoleBadge role={user.role} />
-          {membership ? <TierBadge tier={membership.tier} /> : null}
+          {/* Membership temporarily disabled */}
+          {/* {membership ? <TierBadge tier={membership.tier} /> : null} */}
         </span>
       }
       description={
@@ -149,7 +153,8 @@ export default function DevoteeDetail() {
       }
       tabs={<Tabs items={TABS} value={tab} onChange={setTab} />}
     >
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Membership tile is commented out below, so this row runs 3-up (was lg:grid-cols-4). */}
+      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <StatTile
           label="Lifetime contributions"
           value={money(lifetime)}
@@ -167,12 +172,13 @@ export default function DevoteeDetail() {
           value={donations.length}
           sub={money(donations.reduce((s, d) => s + d.amount, 0))}
         />
-        <StatTile
+        {/* Membership temporarily disabled */}
+        {/* <StatTile
           label="Membership"
           value={membership ? titleCase(membership.tier) : 'None'}
           sub={membership ? `Expires ${fmtDate(membership.endDate, 'MMM yyyy')}` : 'Not enrolled'}
           tone="gold"
-        />
+        /> */}
       </div>
 
       {tab === 'overview' ? (
@@ -307,7 +313,8 @@ export default function DevoteeDetail() {
         )
       ) : null}
 
-      {tab === 'membership' ? (
+      {/* Membership temporarily disabled */}
+      {/* {tab === 'membership' ? (
         <Card className="p-5">
           {membership ? (
             <dl className="divide-y divide-line text-base">
@@ -337,7 +344,7 @@ export default function DevoteeDetail() {
             />
           )}
         </Card>
-      ) : null}
+      ) : null} */}
 
       {tab === 'family' ? (
         <Card className="p-5">

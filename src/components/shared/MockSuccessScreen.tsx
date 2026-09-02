@@ -9,7 +9,7 @@ export interface SummaryRow {
 
 /**
  * Terminal screen for every fake checkout. The email preview panel replaces the real
- * transactional email the prototype deliberately does not send.
+ * transactional email the app deliberately does not send.
  */
 export function MockSuccessScreen({
   title,

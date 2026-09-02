@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { FileDown, Printer, Scale, Target, TrendingUp, Wallet } from 'lucide-react'
 import { PageShell } from '@/components/layout/PageShell'
 import { PnLTable } from '@/components/admin/PnLTable'
+import { TargetBreakdown } from '@/components/admin/TargetBreakdown'
 import { PrintableAgmReport } from '@/components/admin/PrintableAgmReport'
 import { BreakEvenMeter } from '@/components/shared/BreakEvenMeter'
 import { StatTile } from '@/components/shared/StatTile'
@@ -101,6 +102,23 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
           set of numbers — what the board sees here is what a devotee sees there.
         </p>
       </Card>
+
+      {/* Where the target goes. The meter above says how much is left to raise; the first
+          question anyone asks next is what the money is for, so it is answered immediately
+          under it rather than at the bottom of the page. */}
+      <section className="mt-6">
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-serif text-lg text-ink">Where the annual target goes</h2>
+          <p className="text-sm text-muted">
+            Board-approved budget heads, largest first — target, raised and disbursed.
+          </p>
+        </div>
+        <TargetBreakdown
+          allocations={snapshot.allocations}
+          annualTarget={snapshot.annualTarget}
+          ytdCollected={snapshot.ytdCollected}
+        />
+      </section>
 
       {/* Puja P&L */}
       <section className="mt-6">

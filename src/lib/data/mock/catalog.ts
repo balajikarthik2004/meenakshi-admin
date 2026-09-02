@@ -2,14 +2,35 @@ import type { Cadence, Money, PujaAddOn, PujaCatalogItem } from '@/lib/data/type
 
 /** Offered on every recurring sponsorship (Section 10.5, Step 3). */
 export const STANDARD_ADDONS: PujaAddOn[] = [
-  { id: 'prasadam-post', label: 'Prasadam by post', price: 60 },
-  { id: 'birthday-archana', label: 'Extra Archana on birthday', price: 40 },
-  { id: 'livestream-reminder', label: 'Livestream reminder email', price: 0 },
+  {
+    id: 'prasadam-post',
+    label: 'Prasadam by post',
+    blurb: 'Vibhuti, kumkum and prasadam posted to your address',
+    price: 60,
+  },
+  {
+    id: 'birthday-archana-self',
+    label: 'Archadhanuman on your birthday',
+    blurb: 'Offered in your name on your star day each year',
+    price: 25,
+  },
+  {
+    id: 'birthday-archana-family',
+    label: 'Archadhanuman on your family’s birthday',
+    blurb: 'Offered for each family member on their own star day',
+    price: 40,
+  },
+  {
+    id: 'livestream-reminder',
+    label: 'Livestream reminder email',
+    blurb: 'An email an hour before each occurrence',
+    price: 0,
+  },
 ]
 
 /**
  * Deity artwork is rendered as a generated gradient tile rather than a photograph —
- * the prototype ships no binary assets. `imageUrl` stays on the type for the real build.
+ * the app ships no binary assets. `imageUrl` stays on the type for the real build.
  */
 export const PUJA_CATALOG: PujaCatalogItem[] = [
   {

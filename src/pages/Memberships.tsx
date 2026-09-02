@@ -300,7 +300,7 @@ export default function Memberships() {
                   className="w-full"
                   onClick={() =>
                     toast(`${renewalsDue.length} renewal reminders queued`, {
-                      detail: 'Prototype only — no email leaves the building.',
+                      detail: 'No email leaves the building.',
                     })
                   }
                 >

@@ -20,10 +20,12 @@ import { cn, money, moneyShort, titleCase } from '@/lib/utils'
 /* ------------------------------------------------------------ donations trend */
 
 /**
- * Twelve months of receipts. One series, so no legend box — the card title names
- * it — and no per-point labels; the hover crosshair carries the exact figure.
+ * Receipts over whatever window the dashboard is filtered to. One series, so no legend
+ * box — the card title names it — and no per-point labels; the hover crosshair carries
+ * the exact figure. The x key is `label` rather than `month` because the caller decides
+ * the bucket: days for a short range, weeks or months for a long one.
  */
-export function TrendChart({ data }: { data: { month: string; amount: number }[] }) {
+export function TrendChart({ data }: { data: { label: string; amount: number }[] }) {
   return (
     <ResponsiveContainer width="100%" height={230}>
       <AreaChart data={data} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
@@ -35,10 +37,11 @@ export function TrendChart({ data }: { data: { month: string; amount: number }[]
         </defs>
         <CartesianGrid stroke={CHART.grid} strokeDasharray="2 4" vertical={false} />
         <XAxis
-          dataKey="month"
+          dataKey="label"
           tick={AXIS_TICK}
           tickLine={false}
           axisLine={{ stroke: CHART.grid }}
+          minTickGap={16}
         />
         <YAxis
           tick={AXIS_TICK}
@@ -48,9 +51,9 @@ export function TrendChart({ data }: { data: { month: string; amount: number }[]
           tickFormatter={(v: number) => moneyShort(v)}
         />
         <Tooltip {...TOOLTIP_STYLE} formatter={(v) => [money(Number(v)), 'Received']} />
-        {/* `monotone` invented smooth troughs between months and made a spiky series
+        {/* `monotone` invented smooth troughs between points and made a spiky series
             look like data that was never recorded — a single major gift can move one
-            month by six figures. A straight join tells the truth, and visible dots mark
+            bucket by six figures. A straight join tells the truth, and visible dots mark
             where the real readings are. */}
         <Area
           type="linear"

@@ -127,7 +127,7 @@ export default function SignIn() {
             <ArrowRight />
           </Button>
           {/* <p className="max-w-[58ch] text-center text-xs leading-relaxed text-faint">
-            Prototype build — all data is local mock data. Nothing here reaches a real devotee
+            All data is local sample data. Nothing here reaches a real devotee
             record.
           </p> */}
         </div>

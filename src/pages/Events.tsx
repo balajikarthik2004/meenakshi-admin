@@ -198,7 +198,7 @@ export default function Events() {
       >
         <p className="text-base text-muted">
           {confirmDelete?.rsvpCount} devotees have already RSVP’d. They will not be notified
-          automatically in this prototype.
+          automatically.
         </p>
       </Dialog>
     </PageShell>

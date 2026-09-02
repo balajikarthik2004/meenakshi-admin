@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Image, Plus, Save, Trash2, Users } from 'lucide-react'
-import type { EventCost, TempleEvent } from '@/lib/data/types'
+import type { EventCost, EventSponsorship, TempleEvent } from '@/lib/data/types'
 import { PageShell } from '@/components/layout/PageShell'
 import { BreakEvenMeter } from '@/components/shared/BreakEvenMeter'
 import { EventCard } from '@/components/shared/EventCard'
@@ -33,6 +33,26 @@ const blankEvent = (): TempleEvent => {
     targetAmount: 15000,
     collectedAmount: 0,
     costs: [{ label: 'Flowers & garlands', amount: 2500 }],
+    sponsorships: [
+      {
+        key: 'flowers',
+        label: 'Flowers & garlands',
+        blurb: 'Fresh malai for the utsava murti and every sannidhi',
+        price: 750,
+      },
+      {
+        key: 'annadanam',
+        label: 'Annadanam for the day',
+        blurb: 'Free meals for every family who attends',
+        price: 1500,
+      },
+      {
+        key: 'honorarium',
+        label: 'Priest honorarium',
+        blurb: 'Dakshina for the priests who officiate the day',
+        price: 500,
+      },
+    ],
     rsvpCount: 0,
     status: 'upcoming',
   }
@@ -64,6 +84,12 @@ export default function EventEditor({ mode }: { mode: 'create' | 'edit' }) {
     setForm((f) => ({
       ...f,
       costs: f.costs.map((c, j) => (j === i ? { ...c, ...patch } : c)),
+    }))
+
+  const setSponsorship = (i: number, patch: Partial<EventSponsorship>) =>
+    setForm((f) => ({
+      ...f,
+      sponsorships: f.sponsorships.map((o, j) => (j === i ? { ...o, ...patch } : o)),
     }))
 
   const totalCost = form.costs.reduce((s, c) => s + c.amount, 0)
@@ -183,7 +209,7 @@ export default function EventEditor({ mode }: { mode: 'create' | 'edit' }) {
                   </span>
                 }
                 htmlFor="ev-flyer"
-                hint="paste a link — no upload in the prototype"
+                hint="paste a link — no upload yet"
               >
                 <Input
                   id="ev-flyer"
@@ -281,6 +307,78 @@ export default function EventEditor({ mode }: { mode: 'create' | 'edit' }) {
               <p className="mt-3 rounded-md border border-brand-500/30 bg-brand-500/[0.06] p-2.5 text-sm text-brand-600">
                 Costs exceed the fundraising target by {money(totalCost - form.targetAmount)}. Raise
                 the target or trim a line item before publishing.
+              </p>
+            ) : null}
+          </Card>
+
+          {/* What a devotee can tick on the donate page. Kept separate from the cost lines
+              above: a cost line is the temple's whole budget for that head, a sponsorship
+              is the fixed price one family pays toward it. */}
+          <Card className="p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="font-serif text-lg text-ink">Sponsorship options</h2>
+              <span className="text-base text-muted">Shown on the devotee donate page</span>
+            </div>
+            <ul className="mt-3 space-y-3">
+              {form.sponsorships.map((o, i) => (
+                <li key={i} className="rounded-[10px] border border-line p-3">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={o.label}
+                      aria-label={`Sponsorship label ${i + 1}`}
+                      onChange={(e) => setSponsorship(i, { label: e.target.value })}
+                      placeholder="e.g. Annadanam for the day"
+                    />
+                    <Input
+                      type="number"
+                      min={0}
+                      aria-label={`Sponsorship price ${i + 1}`}
+                      value={o.price}
+                      onChange={(e) => setSponsorship(i, { price: Number(e.target.value) || 0 })}
+                      className="w-[130px]"
+                    />
+                    <Button
+                      variant="plain"
+                      size="icon"
+                      aria-label={`Remove sponsorship ${i + 1}`}
+                      onClick={() =>
+                        set(
+                          'sponsorships',
+                          form.sponsorships.filter((_, j) => j !== i),
+                        )
+                      }
+                    >
+                      <Trash2 />
+                    </Button>
+                  </div>
+                  <Input
+                    className="mt-2"
+                    value={o.blurb}
+                    aria-label={`Sponsorship description ${i + 1}`}
+                    onChange={(e) => setSponsorship(i, { blurb: e.target.value })}
+                    placeholder="One line on what this covers"
+                  />
+                </li>
+              ))}
+            </ul>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-3"
+              onClick={() =>
+                set('sponsorships', [
+                  ...form.sponsorships,
+                  { key: `opt${form.sponsorships.length + 1}`, label: '', blurb: '', price: 0 },
+                ])
+              }
+            >
+              <Plus />
+              Add sponsorship option
+            </Button>
+            {form.sponsorships.length === 0 ? (
+              <p className="mt-3 rounded-md border border-saffron-500/30 bg-saffron-500/[0.08] p-2.5 text-sm text-saffron-600">
+                With no options, devotees can still give a free amount to this festival but have
+                nothing specific to sponsor.
               </p>
             ) : null}
           </Card>

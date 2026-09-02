@@ -1,13 +1,14 @@
 import type { Donation, DonationCategory } from '@/lib/data/types'
 import { BOOKINGS_REVENUE } from './bookings'
 import { DEVOTEES } from './users'
-import { addDays, chance, id, int, iso, pick, rng, today } from './seed'
+import type { Rand } from './seed'
+import { chance, dayInYear, id, int, iso, pick, rng, today } from './seed'
 
 /** Perumal's headline number: pujas + donations must reconcile to exactly this. */
 export const TOTAL_COLLECTED_TARGET = 723_000
 
 export const DONATION_CATEGORIES: { key: DonationCategory; label: string; blurb: string }[] = [
-  { key: 'general-hundi', label: 'General Hundi', blurb: 'Wherever the need is greatest' },
+  { key: 'general-hundi', label: 'E-Hundi', blurb: 'Wherever the need is greatest' },
   { key: 'annadanam', label: 'Annadanam', blurb: 'Free meals served every weekend' },
   { key: 'puja', label: 'Puja Fund', blurb: 'Flowers, dravyam and priest honorarium' },
   { key: 'abhishekam', label: 'Abhishekam', blurb: 'Milk, honey and sandal for the deities' },
@@ -47,33 +48,61 @@ const DEDICATIONS = [
  * building-fund majors are what carry a $1M temple budget, and Perumal's P&L needs
  * to look like a real ledger, not a uniform sample.
  */
+/** One gift. `isMajor` gifts are the capital-campaign cheques that carry the budget. */
+function makeDonation(
+  r: Rand,
+  n: number,
+  userId: string | null,
+  isMajor: boolean,
+  createdAt: Date,
+): Donation {
+  const isRecurring = !isMajor && chance(r, 22)
+  return {
+    id: id('don', n),
+    userId,
+    category: isMajor ? 'building' : pick(r, CATEGORY_KEYS),
+    amount: isMajor ? int(r, 12, 58) * 1000 : pick(r, SMALL_AMOUNTS),
+    isRecurring,
+    recurringCadence: isRecurring
+      ? pick(r, ['monthly', 'quarterly', 'yearly'] as const)
+      : undefined,
+    paymentMethod: isMajor ? pick(r, ['ach', 'check'] as const) : pick(r, METHODS),
+    dedicatedTo: chance(r, 26) ? pick(r, DEDICATIONS) : undefined,
+    taxReceiptId: chance(r, 74) ? id('rcpt', n) : undefined,
+    createdAt: iso(createdAt),
+  }
+}
+
 function buildDonations(): Donation[] {
   const r = rng(9042117)
   const base = today()
+  const thisYear = base.getFullYear()
   const out: Donation[] = []
 
-  for (let i = 0; i < 250; i++) {
-    // 15 capital-campaign majors seeded at fixed indices so the mix is reproducible.
-    const isMajor = i % 17 === 3
-    const amount = isMajor ? int(r, 12, 58) * 1000 : pick(r, SMALL_AMOUNTS)
-    const anonymous = chance(r, 8)
-    const isRecurring = !isMajor && chance(r, 22)
-    const category: DonationCategory = isMajor ? 'building' : pick(r, CATEGORY_KEYS)
+  // Every devotee gives at least once in each of the last two tax years, for the same
+  // reason the booking seed guarantees a sponsorship: a statement row with $0 against a
+  // devotee's name is not a statement worth posting.
+  for (const user of DEVOTEES) {
+    for (const year of [thisYear - 1, thisYear]) {
+      out.push(makeDonation(r, out.length + 1, user.id, false, dayInYear(r, year, base)))
+    }
+  }
 
-    out.push({
-      id: id('don', i + 1),
-      userId: anonymous ? null : pick(r, DEVOTEES).id,
-      category,
-      amount,
-      isRecurring,
-      recurringCadence: isRecurring
-        ? pick(r, ['monthly', 'quarterly', 'yearly'] as const)
-        : undefined,
-      paymentMethod: isMajor ? pick(r, ['ach', 'check'] as const) : pick(r, METHODS),
-      dedicatedTo: chance(r, 26) ? pick(r, DEDICATIONS) : undefined,
-      taxReceiptId: chance(r, 74) ? id('rcpt', i + 1) : undefined,
-      createdAt: iso(addDays(base, -int(r, 0, 364))),
-    })
+  // The wider ledger on top — anonymous hundi gifts, recurring givers and the capital
+  // majors, spread across both tax years.
+  for (let i = 0; i < 220; i++) {
+    const isMajor = i % 17 === 3
+    const anonymous = chance(r, 9)
+    const year = pick(r, [thisYear - 1, thisYear])
+    out.push(
+      makeDonation(
+        r,
+        out.length + 1,
+        anonymous ? null : pick(r, DEVOTEES).id,
+        isMajor,
+        dayInYear(r, year, base),
+      ),
+    )
   }
 
   // Reconcile to the exact headline figure: scale the capital majors, then settle the

@@ -23,7 +23,8 @@ const BookingsToday = lazy(() => import('@/pages/BookingsToday'))
 const Catalog = lazy(() => import('@/pages/Catalog'))
 const Donations = lazy(() => import('@/pages/Donations'))
 const Receipts = lazy(() => import('@/pages/Receipts'))
-const Memberships = lazy(() => import('@/pages/Memberships'))
+// Membership temporarily disabled
+// const Memberships = lazy(() => import('@/pages/Memberships'))
 const Events = lazy(() => import('@/pages/Events'))
 const EventEditor = lazy(() => import('@/pages/EventEditor'))
 const CalendarCMS = lazy(() => import('@/pages/CalendarCMS'))
@@ -64,7 +65,8 @@ export default function App() {
 
                 <Route path="/donations" element={<Donations />} />
                 <Route path="/donations/receipts" element={<Receipts />} />
-                <Route path="/memberships" element={<Memberships />} />
+                {/* Membership temporarily disabled */}
+                {/* <Route path="/memberships" element={<Memberships />} /> */}
 
                 <Route path="/events" element={<Events />} />
                 <Route path="/events/new" element={<EventEditor mode="create" />} />

@@ -154,6 +154,40 @@ const COST_TEMPLATES: [string, number][][] = [
   ],
 ]
 
+/**
+ * What a devotee can actually sponsor, three per festival. Priced as a share of the
+ * event's target so the ask scales with the occasion — the flowers at a $40,000
+ * Chithirai are a bigger undertaking than at a $9,000 Aadi Perukku — then rounded to
+ * a round figure a devotee would recognise on a hundi slip.
+ *
+ * These are deliberately smaller than the published `costs` lines above: a cost line
+ * is the temple's whole budget for that head, while a sponsorship is one family's
+ * share of it. The three templates track the three cost templates so the offer always
+ * matches the character of the festival.
+ */
+const SPONSORSHIP_TEMPLATES: [string, string, string, number][][] = [
+  [
+    ['flowers', 'Flowers & garlands', 'Fresh malai for the utsava murti and every sannidhi', 0.05],
+    ['annadanam', 'Annadanam for the day', 'Free meals for every family who attends', 0.1],
+    ['honorarium', 'Priest honorarium', 'Dakshina for the priests who officiate the day', 0.035],
+  ],
+  [
+    ['prasadam', 'Prasadam ingredients', 'Ghee, jaggery and rice for the day’s naivedyam', 0.045],
+    ['decor', 'Decor & lighting', 'Mandapam decoration, kolam and the deepam array', 0.075],
+    ['livestream', 'Sound & livestream', 'PA hire and the stream for families abroad', 0.03],
+  ],
+  [
+    ['dravyam', 'Abhishekam dravyam', 'Milk, honey, sandal and panchamirtham', 0.055],
+    ['annadanam', 'Annadanam for the day', 'Free meals for every family who attends', 0.1],
+    [
+      'vastram',
+      'Vastram & alangaram',
+      'New silk and the jewellery setting for the alangaram',
+      0.04,
+    ],
+  ],
+]
+
 const slugify = (s: string) =>
   s
     .toLowerCase()
@@ -179,6 +213,17 @@ function buildEvents(): TempleEvent[] {
       amount: Math.round((s.target * pct) / 10) * 10,
     }))
 
+    // Rounded to the nearest $25 — a sponsorship is a figure a devotee reads off a
+    // board and writes on a cheque, not a computed fraction of a budget.
+    const sponsorships = SPONSORSHIP_TEMPLATES[i % SPONSORSHIP_TEMPLATES.length]!.map(
+      ([key, label, blurb, pct]) => ({
+        key,
+        label,
+        blurb,
+        price: Math.max(25, Math.round((s.target * pct) / 25) * 25),
+      }),
+    )
+
     return {
       id: id('evt', i + 1),
       title: s.title,
@@ -189,6 +234,7 @@ function buildEvents(): TempleEvent[] {
       targetAmount: s.target,
       collectedAmount: Math.round((s.target * s.collectedPct) / 100 / 50) * 50,
       costs,
+      sponsorships,
       ticketPrice: s.ticketPrice,
       rsvpCount: int(r, 24, 340),
       status,
@@ -197,3 +243,6 @@ function buildEvents(): TempleEvent[] {
 }
 
 export const EVENTS: TempleEvent[] = buildEvents()
+
+/** Lookup for the ledgers, which hold an `eventId` but need to print a title. */
+export const EVENT_BY_ID = new Map(EVENTS.map((e) => [e.id, e]))

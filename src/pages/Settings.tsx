@@ -245,8 +245,8 @@ export default function Settings() {
           <CardHeader>
             <CardTitle>Roles &amp; permissions</CardTitle>
             <CardDescription>
-              The console enforces the board gate today; the rest of this matrix is the shape the
-              real build would honour.
+              The console enforces the board gate today; the rest of this matrix is the shape
+              permissions will follow.
             </CardDescription>
           </CardHeader>
           <CardContent className="overflow-x-auto">
@@ -297,9 +297,7 @@ export default function Settings() {
         <Card className="max-w-2xl">
           <CardHeader>
             <CardTitle>Payment methods</CardTitle>
-            <CardDescription>
-              Placeholder — the prototype contacts no payment processor.
-            </CardDescription>
+            <CardDescription>Placeholder — no payment processor is contacted.</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">

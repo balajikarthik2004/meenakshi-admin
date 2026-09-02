@@ -122,9 +122,7 @@ export function TaxReceiptPreview({
           exchange for these contributions, other than intangible religious benefits. Retain this
           statement for your records.
         </p>
-        <p className="pt-2 italic">
-          Prototype preview — not a valid tax document. No PDF is generated.
-        </p>
+        <p className="pt-2 italic">Preview only — not a valid tax document. No PDF is generated.</p>
       </footer>
     </div>
   )

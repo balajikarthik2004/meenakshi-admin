@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
  * Deity photography.
  *
  * Every image is a public-domain or CC work from Wikimedia Commons, resized to WebP —
- * see `public/deities/CREDITS.md`. They exist so the prototype reads as a temple rather
+ * see `public/deities/CREDITS.md`. They exist so the app reads as a temple rather
  * than a wireframe; the Temple Society's own photography replaces them before production.
  *
  * `focus` matters: devotional art is almost always vertical with the face in the upper

@@ -154,7 +154,7 @@ export default function Receipts() {
             size="sm"
             onClick={() =>
               toast(`${rows.length} statements queued`, {
-                detail: `Prototype only — no email is sent. Real build would post ${year} PDFs to each devotee.`,
+                detail: `No email is sent. ${year} PDFs would be posted to each devotee.`,
               })
             }
             disabled={rows.length === 0}
@@ -169,19 +169,19 @@ export default function Receipts() {
         <StatTile
           label={`${year} total`}
           value={money(grandTotal)}
-          sub="All devotees"
+          // sub="All devotees"
           tone="leaf"
         />
         <StatTile
           label="Statements to issue"
           value={rows.length}
-          sub="One per donor household"
+          // sub="One per donor household"
           tone="brand"
         />
         <StatTile
           label="Average per donor"
           value={money(rows.length ? Math.round(grandTotal / rows.length) : 0)}
-          sub={`Across ${year}`}
+          // sub={`Across ${year}`}
           tone="gold"
         />
       </div>

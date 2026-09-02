@@ -57,7 +57,7 @@ export function PaymentMethodPicker({
         )
       })}
       <p className="col-span-full text-sm text-muted">
-        Prototype only — no card is charged and no payment processor is contacted.
+        No card is charged and no payment processor is contacted.
       </p>
     </div>
   )

@@ -41,7 +41,9 @@ import {
   TRANSPARENCY,
   USERS,
 } from './mock'
+import { LOCAL_KEYS, readLocal, writeLocal } from './local'
 import { useAuthStore } from '@/lib/store/auth'
+import { useProfileSignal } from '@/lib/store/profile'
 
 export const simulateLatency = () => new Promise((r) => setTimeout(r, 150 + Math.random() * 150))
 
@@ -90,6 +92,19 @@ export async function updateDevotee(id: UUID, patch: Partial<User>): Promise<Use
   return u
 }
 
+/**
+ * Family trees the devotee has edited, replayed over the seed on first import so a
+ * saved tree survives a reload. Seeded trees stay untouched until they are edited.
+ */
+function hydrateFamilyTrees() {
+  for (const saved of readLocal<FamilyTree[]>(LOCAL_KEYS.familyTrees, [])) {
+    const i = FAMILY_TREES.findIndex((f) => f.primaryUserId === saved.primaryUserId)
+    if (i >= 0) FAMILY_TREES[i] = saved
+    else FAMILY_TREES.push(saved)
+  }
+}
+hydrateFamilyTrees()
+
 export async function getFamilyTree(userId: UUID): Promise<FamilyTree | null> {
   await simulateLatency()
   return FAMILY_TREES.find((f) => f.primaryUserId === userId) ?? null
@@ -97,9 +112,23 @@ export async function getFamilyTree(userId: UUID): Promise<FamilyTree | null> {
 
 export async function saveFamilyTree(tree: FamilyTree): Promise<FamilyTree> {
   await simulateLatency()
-  const i = FAMILY_TREES.findIndex((f) => f.id === tree.id)
+  // Match on the devotee, not the tree id — the profile page mints `fam_<userId>`
+  // when a devotee has no seeded tree, which would otherwise append a second tree
+  // for the same person the first time they add a relative.
+  const i = FAMILY_TREES.findIndex((f) => f.primaryUserId === tree.primaryUserId)
   if (i >= 0) FAMILY_TREES[i] = tree
   else FAMILY_TREES.push(tree)
+
+  // Persist only the edited trees, not the whole seeded set.
+  const edited = readLocal<FamilyTree[]>(LOCAL_KEYS.familyTrees, []).filter(
+    (f) => f.primaryUserId !== tree.primaryUserId,
+  )
+  writeLocal(LOCAL_KEYS.familyTrees, [...edited, tree])
+
+  // Tell anything deriving state from the tree — the completion ring, for one — that
+  // its copy is now stale.
+  useProfileSignal.getState().bumpFamily()
+
   return tree
 }
 
@@ -232,6 +261,15 @@ export async function createDonation(
     createdAt: new Date().toISOString(),
   }
   DONATIONS.unshift(donation)
+
+  // An event sponsorship is money raised *for that festival*, so it moves the festival's
+  // break-even meter as well as landing in the ledger. Without this the devotee sponsors
+  // the flowers and the event page still reads the same figure it did a moment ago.
+  if (donation.eventId) {
+    const event = EVENTS.find((e) => e.id === donation.eventId)
+    if (event) event.collectedAmount += donation.amount
+  }
+
   return donation
 }
 
@@ -432,70 +470,161 @@ export async function deleteRecurringRule(id: UUID): Promise<void> {
 
 /* -------------------------------------------------------- admin aggregates */
 
+/** A closed date range, inclusive of both ends. `yyyy-mm-dd`, as the date inputs give it. */
+export interface DashboardRange {
+  from: string
+  to: string
+}
+
 export interface AdminStats {
-  donationsMTD: Money
-  donationsYTD: Money
+  /* --- Scoped to the selected range --------------------------------------- */
+  donations: Money
+  /** The same measure over the immediately preceding window of equal length. */
+  donationsPrev: Money
+  sponsorships: number
+  sponsorshipsPrev: number
+  sponsorshipRevenue: Money
+  newDevotees: number
+  newDevoteesPrev: number
+  trend: Array<{ label: string; amount: Money }>
+  byPujaType: Array<{ type: string; bookings: number }>
+  /** How the trend was bucketed, so the chart can caption itself honestly. */
+  grain: 'day' | 'week' | 'month'
+  days: number
+
+  /* --- Point in time. These ignore the range entirely ---------------------- */
   activeBookings: number
   activeMemberships: number
   devoteeCount: number
-  newDevoteesThisWeek: number
   todayQueue: number
   overduePrasadam: number
-  monthlyTrend: Array<{ month: string; amount: Money }>
-  byPujaType: Array<{ type: string; bookings: number }>
 }
 
-export async function getAdminStats(): Promise<AdminStats> {
+const startOfDay = (d: Date) => {
+  const x = new Date(d)
+  x.setHours(0, 0, 0, 0)
+  return x
+}
+
+const endOfDay = (d: Date) => {
+  const x = new Date(d)
+  x.setHours(23, 59, 59, 999)
+  return x
+}
+
+/**
+ * Buckets for the trend chart, chosen from the span rather than fixed at monthly.
+ * A seven-day range plotted in months is one point; a two-year range plotted in days
+ * is 730 of them. Neither is a chart, so the grain follows the question being asked.
+ */
+function buildBuckets(from: Date, to: Date, grain: 'day' | 'week' | 'month') {
+  const out: { start: Date; end: Date; label: string }[] = []
+  const cursor = new Date(from)
+
+  while (cursor.getTime() <= to.getTime()) {
+    let end: Date
+    let label: string
+
+    if (grain === 'month') {
+      end = endOfDay(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0))
+      label = cursor.toLocaleString('en-US', { month: 'short' })
+    } else if (grain === 'week') {
+      end = endOfDay(new Date(cursor.getTime() + 6 * 86400000))
+      label = cursor.toLocaleString('en-US', { month: 'short', day: 'numeric' })
+    } else {
+      end = endOfDay(cursor)
+      label = cursor.toLocaleString('en-US', { month: 'short', day: 'numeric' })
+    }
+
+    out.push({ start: new Date(cursor), end: end > to ? to : end, label })
+
+    if (grain === 'month') cursor.setMonth(cursor.getMonth() + 1, 1)
+    else cursor.setDate(cursor.getDate() + (grain === 'week' ? 7 : 1))
+    cursor.setHours(0, 0, 0, 0)
+  }
+
+  return out
+}
+
+/**
+ * Dashboard aggregates for a date range.
+ *
+ * Only the figures that genuinely have a period are scoped by it. "Active bookings",
+ * "today's queue" and "overdue prasadam" are counts of what is true right now — there
+ * is no such thing as an overdue shipment "in June" — so they are returned unscoped
+ * and the dashboard groups them apart rather than quietly re-labelling a live number
+ * as a historical one.
+ */
+export async function getAdminStats(range?: DashboardRange): Promise<AdminStats> {
   await simulateLatency()
   const now = new Date()
-  const year = now.getFullYear()
-  const month = now.getMonth()
 
-  const donationsYTD = DONATIONS.filter((d) => new Date(d.createdAt).getFullYear() === year).reduce(
-    (s, d) => s + d.amount,
-    0,
-  )
-  const donationsMTD = DONATIONS.filter((d) => {
-    const dt = new Date(d.createdAt)
-    return dt.getFullYear() === year && dt.getMonth() === month
-  }).reduce((s, d) => s + d.amount, 0)
+  const to = range ? endOfDay(new Date(`${range.to}T12:00:00`)) : endOfDay(now)
+  const from = range
+    ? startOfDay(new Date(`${range.from}T12:00:00`))
+    : startOfDay(new Date(now.getFullYear(), 0, 1))
 
-  const monthlyTrend = Array.from({ length: 12 }, (_, i) => {
-    const dt = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1)
-    const amount = DONATIONS.filter((d) => {
-      const c = new Date(d.createdAt)
-      return c.getFullYear() === dt.getFullYear() && c.getMonth() === dt.getMonth()
-    }).reduce((s, d) => s + d.amount, 0)
-    return { month: dt.toLocaleString('en-US', { month: 'short' }), amount }
-  })
+  const span = Math.max(0, to.getTime() - from.getTime())
+  // `to` is the end of its day, so the span already covers the final day whole — the
+  // inclusive count is the rounded span, not the span plus one.
+  const days = Math.max(1, Math.round(span / 86400000))
+
+  // The window immediately before this one, same length — what "vs previous" compares to.
+  const prevTo = new Date(from.getTime() - 1)
+  const prevFrom = new Date(prevTo.getTime() - span)
+
+  const within = (iso: string, a: Date, b: Date) => {
+    const t = new Date(iso).getTime()
+    return t >= a.getTime() && t <= b.getTime()
+  }
+
+  const donationsBetween = (a: Date, b: Date) =>
+    DONATIONS.filter((d) => within(d.createdAt, a, b)).reduce((s, d) => s + d.amount, 0)
+
+  const bookingsBetween = (a: Date, b: Date) =>
+    BOOKINGS.filter((bk) => bk.status !== 'cancelled' && within(bk.createdAt, a, b))
+
+  const devoteesBetween = (a: Date, b: Date) =>
+    USERS.filter((u) => u.role === 'devotee' && within(u.createdAt, a, b)).length
+
+  const rangeBookings = bookingsBetween(from, to)
+
+  const grain: 'day' | 'week' | 'month' = days <= 31 ? 'day' : days <= 130 ? 'week' : 'month'
+  const trend = buildBuckets(from, to, grain).map((b) => ({
+    label: b.label,
+    amount: donationsBetween(b.start, b.end),
+  }))
 
   const typeCounts = new Map<string, number>()
-  for (const b of BOOKINGS) {
-    if (b.status === 'cancelled') continue
+  for (const b of rangeBookings) {
     const puja = PUJA_CATALOG.find((p) => p.id === b.pujaCatalogId)
     if (!puja) continue
     typeCounts.set(puja.type, (typeCounts.get(puja.type) ?? 0) + 1)
   }
 
-  const weekAgo = Date.now() - 7 * 86400000
   const todayKey = now.toDateString()
 
   return {
-    donationsMTD,
-    donationsYTD,
+    donations: donationsBetween(from, to),
+    donationsPrev: donationsBetween(prevFrom, prevTo),
+    sponsorships: rangeBookings.length,
+    sponsorshipsPrev: bookingsBetween(prevFrom, prevTo).length,
+    sponsorshipRevenue: rangeBookings.reduce((s, b) => s + b.amount, 0),
+    newDevotees: devoteesBetween(from, to),
+    newDevoteesPrev: devoteesBetween(prevFrom, prevTo),
+    trend,
+    byPujaType: [...typeCounts.entries()].map(([type, bookings]) => ({ type, bookings })),
+    grain,
+    days,
+
     activeBookings: BOOKINGS.filter((b) => b.status === 'active').length,
     activeMemberships: MEMBERSHIPS.filter((m) => m.status === 'active').length,
     devoteeCount: USERS.filter((u) => u.role === 'devotee').length,
-    newDevoteesThisWeek: USERS.filter(
-      (u) => u.role === 'devotee' && new Date(u.createdAt).getTime() > weekAgo,
-    ).length,
     todayQueue: OCCURRENCES.filter(
       (o) => new Date(o.scheduledAt).toDateString() === todayKey && o.status === 'scheduled',
     ).length,
     overduePrasadam: BOOKINGS.filter(
       (b) => b.status === 'active' && b.addOns.includes('prasadam-post'),
     ).length,
-    monthlyTrend,
-    byPujaType: [...typeCounts.entries()].map(([type, bookings]) => ({ type, bookings })),
   }
 }

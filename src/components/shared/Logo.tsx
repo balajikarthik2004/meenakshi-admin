@@ -5,13 +5,7 @@ import { cn } from '@/lib/utils'
  * temple's brass lamps. Drawn inline so the mark stays crisp at any size and costs
  * no network request.
  */
-export function Logo({
-  className,
-  size = 40,
-}: {
-  className?: string
-  size?: number
-}) {
+export function Logo({ className, size = 40 }: { className?: string; size?: number }) {
   return (
     <img
       src="/deities/logo.png"

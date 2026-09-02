@@ -4,7 +4,7 @@
  * Every mock array is built from `rng(seedNumber)` so a rebuild always produces
  * byte-identical data — no `Math.random()` anywhere in the seed. Dates are the one
  * exception: they are derived from the current clock so "today's bookings" and
- * "upcoming events" stay meaningful whenever the prototype is demoed.
+ * "upcoming events" stay meaningful whenever the app is demoed.
  */
 export function rng(seed: number) {
   let a = seed >>> 0
@@ -37,6 +37,18 @@ export function addDays(base: Date, days: number): Date {
   const d = new Date(base)
   d.setDate(d.getDate() + days)
   return d
+}
+
+/**
+ * A date inside a given calendar year, capped at today for the current year so nothing
+ * is ever dated in the future. The receipt seeds use this to place at least one gift and
+ * one sponsorship per devotee in each of the last two tax years.
+ */
+export function dayInYear(r: Rand, year: number, base: Date): Date {
+  const start = new Date(year, 0, 1)
+  const end = year === base.getFullYear() ? base : new Date(year, 11, 31)
+  const span = Math.max(0, Math.round((end.getTime() - start.getTime()) / 86400000))
+  return addDays(start, int(r, 0, span))
 }
 
 export function addMonths(base: Date, months: number): Date {
