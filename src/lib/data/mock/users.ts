@@ -208,6 +208,40 @@ function buildUsers(): User[] {
       createdAt: new Date(2011, 5, 20).toISOString(),
       avatarInitials: 'RI',
     },
+    // The two approval desks. `signIn('', role)` resolves a role to the first seeded user
+    // holding it, so the finance and committee queues need a face to sign in as.
+    {
+      id: 'usr_finance',
+      role: 'finance',
+      name: 'Anitha Rajagopal',
+      email: 'accounts@smdpearland.org',
+      phone: '(281) 489-0362',
+      address: '17130 McLean Road',
+      city: 'Pearland',
+      state: 'TX',
+      zip: '77584',
+      country: 'US',
+      nakshatra: 'Chitra',
+      gothra: 'Atri',
+      createdAt: new Date(2017, 0, 9).toISOString(),
+      avatarInitials: 'AR',
+    },
+    {
+      id: 'usr_committee',
+      role: 'committee',
+      name: 'Krishnan Venkataraman',
+      email: 'pujacommittee@smdpearland.org',
+      phone: '(281) 489-0363',
+      address: '17130 McLean Road',
+      city: 'Pearland',
+      state: 'TX',
+      zip: '77584',
+      country: 'US',
+      nakshatra: 'Moola',
+      gothra: 'Vashishta',
+      createdAt: new Date(2014, 10, 3).toISOString(),
+      avatarInitials: 'KV',
+    },
   )
 
   return users

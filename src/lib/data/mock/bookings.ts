@@ -1,4 +1,4 @@
-import type { Booking, Cadence, PujaOccurrence, User } from '@/lib/data/types'
+import type { ApprovalEvent, Booking, Cadence, PujaOccurrence, User } from '@/lib/data/types'
 import { PUJA_CATALOG, STANDARD_ADDONS, cadenceOptions, priceForCadence } from './catalog'
 import { DEVOTEES } from './users'
 import type { Rand } from './seed'
@@ -88,6 +88,125 @@ function makeBooking(
   }
 }
 
+/** `Staff.id` of every priest who can be put on a puja. Mirrors STAFF in `misc.ts`. */
+export const PRIEST_IDS = ['usr_priest', 'stf_0002', 'stf_0003', 'stf_0004'] as const
+
+const PAYMENT_METHODS: NonNullable<Booking['payment']>['method'][] = [
+  'card',
+  'ach',
+  'zelle',
+  'check',
+]
+
+/** Plausible transaction references, shaped by how the money arrived. */
+function paymentRef(r: Rand, method: NonNullable<Booking['payment']>['method']) {
+  if (method === 'check') return `CHQ ${int(r, 1000, 9999)}`
+  if (method === 'zelle') return `ZL${int(r, 100000, 999999)}`
+  if (method === 'ach') return `ACH-${int(r, 10000, 99999)}`
+  return `ch_${int(r, 100000, 999999)}${int(r, 1000, 9999)}`
+}
+
+const SENT_BACK_REASONS = [
+  'No matching credit on the bank statement for this amount.',
+  'Cheque returned unpaid — please ask the devotee to re-issue.',
+  'Zelle reference does not match any receipt in the temple account.',
+]
+
+/**
+ * The live approval queue.
+ *
+ * These are recent sponsorships that have not yet cleared the desks, so they carry
+ * `status: 'pending'` and generate no occurrences and no revenue. Spread across the three
+ * in-flight stages so each queue has something in it on first load; `scheduled` and
+ * `declined` are reached by working the queue rather than seeded, because watching a
+ * booking move is the point of the screen.
+ */
+function makeApprovalBooking(
+  r: Rand,
+  n: number,
+  user: User,
+  base: Date,
+  stage: 'finance-review' | 'payment-pending' | 'committee-review',
+): Booking {
+  // Booked within the last fortnight — an approval queue is a queue of recent things.
+  const createdAt = addDays(base, -int(r, 0, 13))
+  const puja = pick(r, PUJA_CATALOG)
+  const options = cadenceOptions(puja)
+  const cadence = options[Math.min(options.length - 1, pick(r, LADDER_CHOICE))]!
+  const startDate = addDays(createdAt, int(r, 3, 21))
+  const endDate = addDays(startDate, cadence === 'one-time' ? 1 : 365)
+
+  const addOns = STANDARD_ADDONS.filter((a) => (a.price === 0 ? chance(r, 55) : chance(r, 28))).map(
+    (a) => a.id,
+  )
+  const addOnTotal = addOns.reduce(
+    (s, a) => s + (STANDARD_ADDONS.find((x) => x.id === a)?.price ?? 0),
+    0,
+  )
+
+  const sankalpamNames = [user.name]
+  if (chance(r, 45)) sankalpamNames.push(`${user.name.split(' ')[0]} family`)
+
+  const method = pick(r, PAYMENT_METHODS)
+  const history: ApprovalEvent[] = [
+    {
+      at: iso(createdAt),
+      actorId: user.id,
+      actorName: user.name,
+      actorRole: 'devotee',
+      action: 'submitted',
+      note: `Sponsorship submitted from the devotee portal · paid by ${method}.`,
+    },
+  ]
+
+  // A booking that reached the committee was verified by accounts on the way, and a
+  // booking that was sent back carries the reason it was sent back for. Without those
+  // entries the timeline on the review sheet would open empty on half the queue.
+  const payment: Booking['payment'] = { method, reference: paymentRef(r, method) }
+
+  if (stage === 'committee-review') {
+    const at = iso(addDays(createdAt, 1))
+    payment.receivedAt = iso(createdAt)
+    payment.verifiedBy = 'usr_finance'
+    payment.verifiedAt = at
+    history.push({
+      at,
+      actorId: 'usr_finance',
+      actorName: 'Anitha Rajagopal',
+      actorRole: 'finance',
+      action: 'payment-verified',
+      note: `Matched against ${payment.reference} on the temple account.`,
+    })
+  }
+
+  if (stage === 'payment-pending') {
+    history.push({
+      at: iso(addDays(createdAt, 1)),
+      actorId: 'usr_finance',
+      actorName: 'Anitha Rajagopal',
+      actorRole: 'finance',
+      action: 'sent-back',
+      note: pick(r, SENT_BACK_REASONS),
+    })
+  }
+
+  return {
+    id: id('bkg', n),
+    userId: user.id,
+    pujaCatalogId: puja.id,
+    cadence,
+    startDate: iso(startDate),
+    endDate: iso(endDate),
+    sankalpamNames,
+    addOns,
+    amount: priceForCadence(puja, cadence) + addOnTotal,
+    status: 'pending',
+    approval: { stage, history },
+    payment,
+    createdAt: iso(createdAt),
+  }
+}
+
 function buildBookings(): Booking[] {
   const r = rng(430915)
   const base = today()
@@ -113,6 +232,16 @@ function buildBookings(): Booking[] {
     out.push(makeBooking(r, out.length + 1, user, dayInYear(r, year, base), base))
   }
 
+  // Five with accounts, two sent back, three waiting on the committee.
+  const queue = [
+    ...Array<'finance-review'>(5).fill('finance-review'),
+    ...Array<'payment-pending'>(2).fill('payment-pending'),
+    ...Array<'committee-review'>(3).fill('committee-review'),
+  ]
+  for (const stage of queue) {
+    out.push(makeApprovalBooking(r, out.length + 1, pick(r, DEVOTEES), base, stage))
+  }
+
   return out
 }
 
@@ -126,8 +255,14 @@ const NOTE_POOL = [
   'Rescheduled from the previous week',
 ]
 
-/** Step for a cadence, in days. `yearly`/`one-time` are handled explicitly. */
-const CADENCE_DAYS: Record<Cadence, number> = {
+/**
+ * Step for a cadence, in days. `yearly`/`one-time` are handled explicitly.
+ *
+ * Exported because `api.ts` walks the same rhythm when it materialises occurrences for a
+ * booking approved during the session — the roster a committee approval produces has to
+ * land on the same dates the seed would have chosen.
+ */
+export const CADENCE_DAYS: Record<Cadence, number> = {
   daily: 1,
   weekly: 7,
   monthly: 30,
@@ -194,8 +329,13 @@ function buildOccurrences(): PujaOccurrence[] {
 
 export const OCCURRENCES: PujaOccurrence[] = buildOccurrences()
 
-/** Total sponsorship revenue booked — feeds the $723K transparency reconciliation. */
-export const BOOKINGS_REVENUE = BOOKINGS.filter((b) => b.status !== 'cancelled').reduce(
-  (s, b) => s + b.amount,
-  0,
-)
+/**
+ * Total sponsorship revenue booked — feeds the $723K transparency reconciliation.
+ *
+ * `pending` is excluded alongside `cancelled`: a sponsorship whose payment the accounts
+ * desk has not yet verified is not money the temple can report having received. Counting
+ * it here would inflate the reconciliation by whatever is sitting in the queue.
+ */
+export const BOOKINGS_REVENUE = BOOKINGS.filter(
+  (b) => b.status !== 'cancelled' && b.status !== 'pending',
+).reduce((s, b) => s + b.amount, 0)

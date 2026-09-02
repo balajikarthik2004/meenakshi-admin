@@ -34,9 +34,18 @@ export const fmtDay = (d: string | Date) => fmtDate(d, 'EEE, MMM d')
 export const fmtDateTime = (d: string | Date) => fmtDate(d, "MMM d, yyyy 'at' h:mm a")
 export const fmtTime = (d: string | Date) => fmtDate(d, 'h:mm a')
 
+/**
+ * "9 days ago" or "in 9 days", picked from the date rather than assumed.
+ *
+ * This used to append " ago" unconditionally, which was harmless while every caller
+ * passed a timestamp of something that had already happened. A volunteer campaign's
+ * briefing is the first forward-looking date in the console, and it read as "9 days ago"
+ * for a briefing nine days away — the exact opposite of the truth, on the one field a
+ * coordinator uses to decide whether there is still time to recruit.
+ */
 export function fmtRelative(d: string | Date) {
   const date = toDate(d)
-  return isValid(date) ? `${formatDistanceToNowStrict(date)} ago` : '—'
+  return isValid(date) ? formatDistanceToNowStrict(date, { addSuffix: true }) : '—'
 }
 
 export const pct = (n: number) => `${Math.round(n)}%`

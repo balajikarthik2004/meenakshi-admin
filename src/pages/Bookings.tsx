@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Download, Pause, Play, X } from 'lucide-react'
+import { ArrowUpRight, Download, Pause, Play, X } from 'lucide-react'
 import type { Booking, User } from '@/lib/data/types'
 import { PageShell } from '@/components/layout/PageShell'
 import { DataTable, type Column } from '@/components/admin/DataTable'
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Toolbar, ToolbarDate, ToolbarSelect } from '@/components/admin/Toolbar'
 import { MenuItem, Popover } from '@/components/ui/overlay'
 import { useToast } from '@/components/ui/toast'
-import { listBookings, listDevotees, setBookingStatus } from '@/lib/data/api'
+import { isRealisedBooking, listBookings, listDevotees, setBookingStatus } from '@/lib/data/api'
 import { PUJA_BY_ID, PUJA_CATALOG } from '@/lib/data/mock'
 import { useAsync } from '@/lib/hooks'
 import { downloadCSV, fmtDate, money, titleCase } from '@/lib/utils'
@@ -129,7 +129,25 @@ export default function Bookings() {
           >
             {(close) => (
               <>
-                {r.booking.status === 'active' ? (
+                {/* A booking still in the approval chain has no lifecycle to manage.
+                    The old two-way Pause/Resume fell through to "Resume" for anything
+                    not active, which on a pending row meant one click could make a
+                    sponsorship live without accounts ever seeing the payment. */}
+                {r.booking.approval && r.booking.approval.stage !== 'scheduled' ? (
+                  <MenuItem
+                    onClick={() => {
+                      close()
+                      navigate(
+                        r.booking.approval?.stage === 'committee-review'
+                          ? '/approvals/committee'
+                          : '/approvals/finance',
+                      )
+                    }}
+                  >
+                    <ArrowUpRight className="size-4" />
+                    Open in approvals
+                  </MenuItem>
+                ) : r.booking.status === 'active' ? (
                   <MenuItem
                     onClick={() => {
                       close()
@@ -167,6 +185,18 @@ export default function Bookings() {
     },
   ]
 
+  /**
+   * "Committed" used to sum every visible row. Now that a booking can be sitting
+   * unverified in the accounts queue, one total would be quoting money nobody has
+   * confirmed arrived, so the confirmed figure and the queue depth are reported apart.
+   */
+  const awaitingCount = rows.filter(
+    (r) => r.booking.approval && r.booking.approval.stage !== 'scheduled',
+  ).length
+  const description = `${rows.length} sponsorship${rows.length === 1 ? '' : 's'} · ${money(
+    rows.filter((r) => isRealisedBooking(r.booking)).reduce((s, r) => s + r.booking.amount, 0),
+  )} confirmed${awaitingCount > 0 ? ` · ${awaitingCount} awaiting approval` : ''}`
+
   const exportCSV = () =>
     downloadCSV(
       'meenakshi-bookings.csv',
@@ -199,7 +229,7 @@ export default function Bookings() {
         aria-label="Filter by status"
       >
         <option value="">All statuses</option>
-        {['active', 'paused', 'completed', 'cancelled'].map((v) => (
+        {['pending', 'active', 'paused', 'completed', 'cancelled'].map((v) => (
           <option key={v} value={v}>
             {titleCase(v)}
           </option>
@@ -227,7 +257,7 @@ export default function Bookings() {
       toolbar={toolbar}
       eyebrow="Operations"
       title="All bookings"
-      description={`${rows.length} sponsorship${rows.length === 1 ? '' : 's'} · ${money(rows.reduce((s, r) => s + r.booking.amount, 0))} committed`}
+      description={description}
       actions={
         <Button variant="ghost" size="sm" onClick={exportCSV} disabled={rows.length === 0}>
           <Download />

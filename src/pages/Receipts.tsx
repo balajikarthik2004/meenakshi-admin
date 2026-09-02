@@ -9,7 +9,12 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Select } from '@/components/ui/input'
 import { useToast } from '@/components/ui/toast'
-import { getMyBookings, getYearlyContributions, listDonations } from '@/lib/data/api'
+import {
+  getMyBookings,
+  getYearlyContributions,
+  isRealisedBooking,
+  listDonations,
+} from '@/lib/data/api'
 import { PUJA_BY_ID } from '@/lib/data/mock'
 import { useAsync } from '@/lib/hooks'
 import { downloadCSV, money, titleCase } from '@/lib/utils'
@@ -40,7 +45,7 @@ export default function Receipts() {
           amount: d.amount,
         })),
       ...bookings
-        .filter((b) => b.status !== 'cancelled' && new Date(b.createdAt).getFullYear() === year)
+        .filter((b) => isRealisedBooking(b) && new Date(b.createdAt).getFullYear() === year)
         .map((b) => ({
           date: b.createdAt,
           description: `${PUJA_BY_ID.get(b.pujaCatalogId)?.name ?? 'Puja'} sponsorship (${b.cadence})`,

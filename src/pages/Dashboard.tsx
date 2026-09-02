@@ -273,7 +273,9 @@ export default function Dashboard() {
         <Card>
           <CardHeader>
             <CardTitle>Sponsorships by puja type</CardTitle>
-            <CardDescription>Booked in this period, cancelled excluded.</CardDescription>
+            <CardDescription>
+              Booked in this period. Cancelled and unapproved excluded.
+            </CardDescription>
           </CardHeader>
           <div className="px-4 py-4">
             {stats.byPujaType.length > 0 ? (

@@ -8,6 +8,10 @@ const ROLE_VARIANT: Record<Role, 'brand' | 'gold' | 'leaf' | 'neutral'> = {
   board: 'gold',
   priest: 'leaf',
   devotee: 'neutral',
+  // The two approval desks. Accounts wears the money colour the ledger already uses;
+  // the committee wears the priests' green, since what it decides is who officiates.
+  finance: 'gold',
+  committee: 'leaf',
 }
 
 export const RoleBadge = ({ role }: { role: Role }) => (
@@ -47,6 +51,18 @@ type AnyStatus =
   | 'ongoing'
   | 'planned'
   | 'in-progress'
+  // Volunteer campaigns, and the two axes underneath them: what was asked (an invite)
+  // and what the temple got (a roster place).
+  | 'draft'
+  | 'recruiting'
+  | 'staffed'
+  | 'sent'
+  | 'accepted'
+  | 'declined'
+  | 'no-response'
+  | 'checked-in'
+  | 'no-show'
+  | 'withdrawn'
 
 const STATUS_VARIANT: Record<AnyStatus, 'leaf' | 'gold' | 'brand' | 'neutral' | 'default'> = {
   active: 'leaf',
@@ -62,6 +78,20 @@ const STATUS_VARIANT: Record<AnyStatus, 'leaf' | 'gold' | 'brand' | 'neutral' | 
   expired: 'brand',
   cancelled: 'brand',
   skipped: 'brand',
+  // A campaign nobody has broadcast yet is neutral, not a warning — drafting is a
+  // normal place to be sitting.
+  draft: 'neutral',
+  recruiting: 'gold',
+  staffed: 'leaf',
+  // An invite that has gone out but drawn no reply is the same "waiting on someone
+  // else" as a pending payment, and wears the same colour.
+  sent: 'gold',
+  accepted: 'leaf',
+  declined: 'brand',
+  'no-response': 'neutral',
+  'checked-in': 'leaf',
+  'no-show': 'brand',
+  withdrawn: 'brand',
 }
 
 /**
@@ -89,6 +119,18 @@ const STATUS_DOT: Record<AnyStatus, string> = {
   expired: 'bg-brand-500',
   cancelled: 'bg-brand-500',
   skipped: 'bg-brand-500',
+  draft: 'bg-faint',
+  recruiting: 'bg-saffron-500',
+  staffed: 'bg-leaf-500',
+  sent: 'bg-saffron-500',
+  accepted: 'bg-leaf-500',
+  declined: 'bg-brand-500',
+  'no-response': 'bg-faint',
+  // Deliberately the deeper green: on the day, "checked in" and "confirmed" sit in the
+  // same column and the coordinator is counting only the first.
+  'checked-in': 'bg-leaf-600',
+  'no-show': 'bg-brand-500',
+  withdrawn: 'bg-brand-500',
 }
 
 export const StatusPill = ({ status }: { status: string }) => (

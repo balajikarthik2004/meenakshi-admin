@@ -20,6 +20,7 @@ import {
   getFamilyTree,
   // getMembership, // Membership temporarily disabled
   getMyBookings,
+  isRealisedBooking,
   listDonations,
   saveFamilyTree,
   updateDevotee,
@@ -94,7 +95,7 @@ export default function DevoteeDetail() {
 
   const lifetime =
     donations.reduce((s, d) => s + d.amount, 0) +
-    bookings.filter((b) => b.status !== 'cancelled').reduce((s, b) => s + b.amount, 0)
+    bookings.filter(isRealisedBooking).reduce((s, b) => s + b.amount, 0)
   const activeBookings = bookings.filter((b) => b.status === 'active')
 
   const save = async () => {

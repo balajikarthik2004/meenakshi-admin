@@ -1,22 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import {
-  BadgeDollarSign,
-  BookOpen,
-  CalendarDays,
-  CalendarCheck,
-  Gauge,
-  Landmark,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  ReceiptText,
-  Settings,
-  ShieldCheck,
-  Users,
-  X,
-} from 'lucide-react'
+import { LogOut, Menu, X } from 'lucide-react'
 import type { Role } from '@/lib/data/types'
+import { navGroupsFor } from '@/lib/nav'
 import { Logo } from '@/components/shared/Logo'
 import { Avatar } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,51 +10,8 @@ import { TEMPLE } from '@/lib/data/mock'
 import { useAuthStore } from '@/lib/store/auth'
 import { cn } from '@/lib/utils'
 
-interface NavItem {
-  to: string
-  label: string
-  Icon: typeof Users
-  end?: boolean
-  roles?: Role[]
-}
-
-const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
-  {
-    title: 'Operations',
-    items: [
-      { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
-      { to: '/bookings/today', label: 'Today’s pujas', Icon: CalendarCheck },
-      { to: '/bookings', label: 'All bookings', Icon: BookOpen, end: true },
-      { to: '/catalog', label: 'Puja catalogue', Icon: Landmark },
-    ],
-  },
-  {
-    title: 'People',
-    items: [
-      { to: '/devotees', label: 'Devotees', Icon: Users, end: true },
-      // Membership temporarily disabled
-      // { to: '/memberships', label: 'Memberships', Icon: ShieldCheck },
-    ],
-  },
-  {
-    title: 'Money',
-    items: [
-      { to: '/donations', label: 'Donation ledger', Icon: BadgeDollarSign, end: true },
-      { to: '/donations/receipts', label: 'Tax receipts', Icon: ReceiptText },
-      { to: '/transparency', label: 'Transparency', Icon: Gauge },
-      { to: '/board', label: 'Board view', Icon: ShieldCheck, roles: ['board'] },
-    ],
-  },
-  {
-    title: 'Programme',
-    items: [
-      { to: '/events', label: 'Events', Icon: CalendarDays, end: true },
-      { to: '/calendar', label: 'Calendar CMS', Icon: CalendarDays },
-      // { to: '/facility', label: 'Facility bookings', Icon: Building2 },
-      { to: '/settings', label: 'Settings', Icon: Settings },
-    ],
-  },
-]
+/* The nav table, the route guard and the sign-in cards all read `@/lib/nav`, so a page's
+   audience is stated once rather than restated in three files that can drift apart. */
 
 export function RequireAdminAuth() {
   const user = useAuthStore((s) => s.user)
@@ -84,11 +27,27 @@ export function RequireBoard() {
   return <Outlet />
 }
 
+/**
+ * Gates a route to a set of roles, sending everyone else somewhere they can actually use.
+ *
+ * The approval desks needed the same shape `RequireBoard` has, but for two roles at once
+ * and with the administrator holding a key to both — the temple has one administrator and
+ * two desks that are not always staffed, so an approval must never be unreachable. Who
+ * actually pressed the button is still recorded on the booking either way.
+ */
+export function RequireRole({ roles, fallback = '/dashboard' }: { roles: Role[]; fallback?: string }) {
+  const user = useAuthStore((s) => s.user)
+  if (!user || !roles.includes(user.role)) return <Navigate to={fallback} replace />
+  return <Outlet />
+}
+
 const ROLE_LABEL: Record<Role, string> = {
   admin: 'Administrator',
   board: 'Board member',
   priest: 'Priest',
   devotee: 'Devotee',
+  finance: 'Accounts & finance',
+  committee: 'Puja committee',
 }
 
 export function AdminLayout() {
@@ -123,8 +82,8 @@ export function AdminLayout() {
 
   const nav = (
     <nav className="flex flex-col gap-3">
-      {NAV_GROUPS.map((group) => {
-        const items = group.items.filter((i) => !i.roles || i.roles.includes(user.role))
+      {navGroupsFor(user.role).map((group) => {
+        const items = group.items
         if (items.length === 0) return null
         return (
           <div key={group.title}>

@@ -29,10 +29,18 @@ const TABS = [
 const PERMISSIONS = [
   { key: 'devotees', label: 'View & edit devotee records' },
   { key: 'bookings', label: 'Manage bookings and fulfilment' },
+  { key: 'verify-payments', label: 'Verify sponsorship payments' },
+  { key: 'assign-priests', label: 'Assign priests to pujas' },
   { key: 'catalog', label: 'Edit the puja catalogue' },
   { key: 'ledger', label: 'View the donation ledger' },
   { key: 'receipts', label: 'Issue tax receipts' },
   { key: 'events', label: 'Publish events and the calendar' },
+  { key: 'volunteers', label: 'Run volunteer campaigns and rosters' },
+  { key: 'inventory', label: 'Manage the temple store' },
+  { key: 'requirements', label: 'Write puja requirement sheets' },
+  { key: 'allocate-budgets', label: 'Allocate requirement budgets' },
+  { key: 'approve-requirements', label: 'Approve requirement sheets' },
+  { key: 'readiness', label: 'Sign off pre-puja readiness' },
   { key: 'transparency', label: 'View financial dashboards' },
   { key: 'settings', label: 'Change temple settings' },
 ]
@@ -42,8 +50,14 @@ const DEFAULT_MATRIX: Record<string, Record<Role, boolean>> = Object.fromEntries
     p.key,
     {
       admin: true,
-      priest: ['bookings', 'catalog'].includes(p.key),
+      priest: ['bookings', 'catalog', 'inventory', 'requirements', 'readiness'].includes(p.key),
       board: ['transparency', 'ledger', 'devotees'].includes(p.key),
+      // The two rows the console genuinely enforces, via RequireRole on the approval
+      // routes — the rest of this matrix is still the shape permissions will follow.
+      finance: ['verify-payments', 'ledger', 'receipts', 'allocate-budgets'].includes(p.key),
+      committee: ['assign-priests', 'bookings', 'catalog', 'volunteers', 'events'].includes(
+        p.key,
+      ),
       devotee: false,
     } as Record<Role, boolean>,
   ]),

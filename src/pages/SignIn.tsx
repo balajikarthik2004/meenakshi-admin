@@ -1,6 +1,16 @@
 import { useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { ArrowRight, BookOpen, Gauge, Loader2, Lock, ShieldCheck, Users } from 'lucide-react'
+import {
+  ArrowRight,
+  BadgeCheck,
+  BookOpen,
+  Gauge,
+  Loader2,
+  Lock,
+  ShieldCheck,
+  UserCheck,
+  Users,
+} from 'lucide-react'
 import type { Role } from '@/lib/data/types'
 import { Button } from '@/components/ui/button'
 import { Logo } from '@/components/shared/Logo'
@@ -9,7 +19,7 @@ import { useAuthStore } from '@/lib/store/auth'
 import { cn } from '@/lib/utils'
 
 const ROLES: {
-  role: Extract<Role, 'admin' | 'priest' | 'board'>
+  role: Extract<Role, 'admin' | 'priest' | 'board' | 'finance' | 'committee'>
   title: string
   Icon: typeof Users
   blurb: string
@@ -36,7 +46,28 @@ const ROLES: {
     blurb: 'Strategic and financial oversight, including the read-only AGM view.',
     sees: ['Transparency dashboard', 'Board view', 'Projects tracker'],
   },
+  {
+    role: 'finance',
+    title: 'Accounts & Finance',
+    Icon: BadgeCheck,
+    blurb: 'Verifies that a sponsorship payment actually reached the temple account.',
+    sees: ['Payment approvals', 'Donation ledger', 'Tax receipts'],
+  },
+  {
+    role: 'committee',
+    title: 'Puja Committee',
+    Icon: UserCheck,
+    blurb: 'Puts a priest on every sponsorship accounts has cleared, day by day.',
+    sees: ['Priest assignment', 'Today’s pujas', 'Puja catalogue'],
+  },
 ]
+
+/** Where each role lands after signing in — the desk it actually works at. */
+const ROLE_HOME: Partial<Record<Role, string>> = {
+  board: '/board',
+  finance: '/approvals/finance',
+  committee: '/approvals/committee',
+}
 
 export default function SignIn() {
   const navigate = useNavigate()
@@ -50,7 +81,7 @@ export default function SignIn() {
     setBusy(role)
     await signIn('', role)
     setBusy(null)
-    navigate(role === 'board' ? '/board' : from, { replace: true })
+    navigate(ROLE_HOME[role] ?? from, { replace: true })
   }
 
   return (
@@ -74,7 +105,9 @@ export default function SignIn() {
           </span>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        {/* Five desks rather than three, so the row breaks to two columns before it
+            reaches three — five cards squeezed into a single row read as a toolbar. */}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {ROLES.map(({ role, title, Icon, blurb, sees }) => {
             const person = USERS.find((u) => u.role === role)
             const loading = busy === role

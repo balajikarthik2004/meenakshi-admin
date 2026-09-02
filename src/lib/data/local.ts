@@ -17,6 +17,41 @@ const NS = 'meenakshi-admin'
 export const LOCAL_KEYS = {
   familyTrees: `${NS}:family-trees`,
   emailPrefs: `${NS}:email-prefs`,
+  /**
+   * Approval decisions, and the roster they produce.
+   *
+   * The seeded arrays reset on every page load, which is fine for data nobody changes.
+   * An approval chain is different: it deliberately spans two desks, and reaching the
+   * second one means signing in as somebody else — a full page load. Without this, the
+   * accounts desk verifies a payment and the committee opens a queue that never
+   * received it, which makes the feature untestable and undemonstrable.
+   */
+  approvals: `${NS}:approvals`,
+  rosterAssignments: `${NS}:roster-assignments`,
+  /**
+   * Volunteer campaigns, outreach and rosters.
+   *
+   * Same reasoning as `approvals`, for the same reason: the volunteer flow spans a
+   * broadcast, the replies it draws and the roster those replies build, and demonstrating
+   * it end to end means reloading between steps. Unlike the approval keys, this one also
+   * holds records that exist nowhere else — a campaign the coordinator created has no
+   * seeded original to fall back to — so created rows are stored whole while seeded rows
+   * store only the fields a desk can change.
+   */
+  volunteers: `${NS}:volunteers`,
+  /**
+   * The store, the requirement sheets, and the priest's readiness sign-offs.
+   *
+   * This one has to persist for a reason the others do not: the requirement chain runs
+   * priest → accounts → administrator, three sign-ins and therefore three page loads,
+   * and the readiness screen at the end of it reads the stock the whole chain was about.
+   * Without this, a sheet approved as the administrator is gone by the time you sign
+   * back in as the priest to check it against the shelf.
+   *
+   * Stock is stored as movements plus the balance they arrive at, rather than as a bare
+   * `onHand` figure, so a reload cannot leave the ledger and the count disagreeing.
+   */
+  inventory: `${NS}:inventory`,
 } as const
 
 export function readLocal<T>(key: string, fallback: T): T {
