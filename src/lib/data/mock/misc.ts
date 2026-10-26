@@ -1,14 +1,11 @@
 import type {
-  FacilityBooking,
-  Money,
   RecurringRule,
   Staff,
   TargetAllocation,
   TransparencySnapshot,
 } from '@/lib/data/types'
 import { PROJECTS_RAISED, PROJECTS_SPENT } from './projects'
-import { addDays, id, int, iso, pick, rng, today } from './seed'
-import { DEVOTEES } from './users'
+import { iso } from './seed'
 
 /**
  * The board-approved budget, broken out by head. Two figures are deliberately not
@@ -176,58 +173,6 @@ export const STAFF: Staff[] = [
     email: 'perumal@smdpearland.org',
   },
 ]
-
-export interface FacilitySpec {
-  key: FacilityBooking['facility']
-  label: string
-  capacity: number
-  baseRate: Money
-}
-
-export const FACILITIES: FacilitySpec[] = [
-  { key: 'main-hall', label: 'Main Hall', capacity: 400, baseRate: 1200 },
-  { key: 'mini-hall', label: 'Mini Hall', capacity: 120, baseRate: 450 },
-  { key: 'canteen', label: 'Canteen', capacity: 80, baseRate: 300 },
-]
-
-export const FACILITY_ITEMS: { label: string; price: Money; unit: string }[] = [
-  { label: 'Folding chairs', price: 2, unit: 'per chair' },
-  { label: 'Banquet tables', price: 12, unit: 'per table' },
-  { label: 'Catering (vegetarian, per plate)', price: 18, unit: 'per plate' },
-  { label: 'Sound system & mic', price: 150, unit: 'flat' },
-  { label: 'Stage lighting', price: 220, unit: 'flat' },
-  { label: 'Cleaning crew', price: 180, unit: 'flat' },
-]
-
-function buildFacilityBookings(): FacilityBooking[] {
-  const r = rng(660331)
-  const base = today()
-  const facilities = FACILITIES.map((f) => f.key)
-  const statuses: FacilityBooking['status'][] = ['confirmed', 'confirmed', 'pending', 'cancelled']
-
-  return Array.from({ length: 14 }, (_, i) => {
-    const items = FACILITY_ITEMS.filter(() => r() > 0.55).map((it) => ({
-      label: it.label,
-      qty: it.unit === 'flat' ? 1 : int(r, 20, 220),
-      price: it.price,
-    }))
-    const facility = pick(r, facilities)
-    const baseRate = FACILITIES.find((f) => f.key === facility)!.baseRate
-    const total = items.reduce<number>((s, it) => s + it.qty * it.price, baseRate)
-
-    return {
-      id: id('fac', i + 1),
-      userId: pick(r, DEVOTEES).id,
-      facility,
-      date: iso(addDays(base, int(r, -20, 75))),
-      items,
-      total,
-      status: pick(r, statuses),
-    }
-  }).sort((a, b) => a.date.localeCompare(b.date))
-}
-
-export const FACILITY_BOOKINGS: FacilityBooking[] = buildFacilityBookings()
 
 /** Rendered by the admin "Email templates" settings tab. */
 export const EMAIL_TEMPLATES = [

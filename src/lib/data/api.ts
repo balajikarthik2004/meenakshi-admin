@@ -10,6 +10,9 @@ import type {
   Booking,
   Donation,
   FacilityBooking,
+  FacilityBookingStatus,
+  FacilitySlotKey,
+  FacilityVenue,
   FamilyTree,
   KitchenOrder,
   ClassEnrolment,
@@ -60,6 +63,7 @@ import {
   DONATIONS,
   EVENTS,
   FACILITY_BOOKINGS,
+  FACILITY_VENUES,
   FAMILY_TREES,
   KITCHEN_ORDERS,
   CLASS_ENROLMENTS,
@@ -92,6 +96,7 @@ import {
   roleLabel,
 } from './mock'
 import { LOCAL_KEYS, readLocal, writeLocal } from './local'
+import { priceBooking, slotAvailability } from '@/lib/facility'
 import { holdsSeat, isFull, summariseSchool } from '@/lib/school'
 import { isActive, isItemServed, kitchenStatusAt, ticketUrgency } from '@/lib/kitchen'
 import { derivePledgeStatus, pledgeTotals, summarisePledges } from '@/lib/pledge'
@@ -1388,31 +1393,232 @@ export async function rsvpToEvent(id: UUID, seats: number): Promise<TempleEvent 
 
 /* ----------------------------------------------------------------- facility */
 
-export async function listFacilityBookings(): Promise<FacilityBooking[]> {
-  await simulateLatency()
-  return [...FACILITY_BOOKINGS]
+/**
+ * The hall register.
+ *
+ * Created rows are stored whole and office decisions as a patch, the same shape
+ * `hydrateEnrolments` uses — a request the devotee made has no seeded original to
+ * replay over, while a seeded booking the office confirmed only needs its changed
+ * fields kept.
+ */
+interface SavedFacility {
+  created: FacilityBooking[]
+  changed: Record<
+    UUID,
+    Partial<
+      Pick<
+        FacilityBooking,
+        'status' | 'officeNote' | 'declineReason' | 'depositPaidAt' | 'decidedAt'
+      >
+    >
+  >
 }
 
-export async function createFacilityBooking(
-  input: Omit<FacilityBooking, 'id' | 'status'>,
-): Promise<FacilityBooking> {
-  await simulateLatency()
-  const fb: FacilityBooking = {
-    ...input,
-    id: `fac_${String(FACILITY_BOOKINGS.length + 1).padStart(4, '0')}`,
-    status: 'pending',
+const emptySavedFacility = (): SavedFacility => ({ created: [], changed: {} })
+
+function persistFacility(mutate: (s: SavedFacility) => void) {
+  const saved = readLocal<SavedFacility>(LOCAL_KEYS.facility, emptySavedFacility())
+  mutate(saved)
+  writeLocal(LOCAL_KEYS.facility, saved)
+}
+
+function hydrateFacility() {
+  const saved = readLocal<SavedFacility>(LOCAL_KEYS.facility, emptySavedFacility())
+
+  for (const b of saved.created) {
+    if (!FACILITY_BOOKINGS.some((x) => x.id === b.id)) FACILITY_BOOKINGS.push(b)
   }
-  FACILITY_BOOKINGS.push(fb)
-  return fb
+  for (const [bid, patch] of Object.entries(saved.changed)) {
+    const b = FACILITY_BOOKINGS.find((x) => x.id === bid)
+    if (b) Object.assign(b, patch)
+  }
+
+  FACILITY_BOOKINGS.sort((a, b) => a.date.localeCompare(b.date))
+}
+hydrateFacility()
+
+function saveFacilityBooking(b: FacilityBooking) {
+  persistFacility((s) => {
+    const i = s.created.findIndex((x) => x.id === b.id)
+    if (i >= 0) s.created[i] = clone(b)
+    else
+      s.changed[b.id] = {
+        status: b.status,
+        officeNote: b.officeNote,
+        declineReason: b.declineReason,
+        depositPaidAt: b.depositPaidAt,
+        decidedAt: b.decidedAt,
+      }
+  })
 }
 
+export async function listVenues(includeInactive = false): Promise<FacilityVenue[]> {
+  await simulateLatency()
+  return clone(FACILITY_VENUES.filter((v) => includeInactive || v.active))
+}
+
+export async function getVenueBySlug(slug: string): Promise<FacilityVenue | null> {
+  await simulateLatency()
+  return clone(FACILITY_VENUES.find((v) => v.slug === slug) ?? null)
+}
+
+export async function listFacilityBookings(filter?: {
+  venueId?: UUID
+  status?: FacilityBookingStatus
+  userId?: UUID
+}): Promise<FacilityBooking[]> {
+  await simulateLatency()
+  return clone(
+    FACILITY_BOOKINGS.filter((b) => (filter?.venueId ? b.venueId === filter.venueId : true))
+      .filter((b) => (filter?.status ? b.status === filter.status : true))
+      .filter((b) => (filter?.userId ? b.userId === filter.userId : true))
+      .sort((a, b) => a.date.localeCompare(b.date)),
+  )
+}
+
+/** A devotee's own requests, newest event first — the order they ask about them in. */
+export async function getMyFacilityBookings(userId: UUID): Promise<FacilityBooking[]> {
+  await simulateLatency()
+  return clone(
+    FACILITY_BOOKINGS.filter((b) => b.userId === userId).sort((a, b) =>
+      b.date.localeCompare(a.date),
+    ),
+  )
+}
+
+export class FacilityUnavailableError extends Error {
+  readonly reason: string
+  constructor(reason: string) {
+    super(reason)
+    this.name = 'FacilityUnavailableError'
+    this.reason = reason
+  }
+}
+
+/**
+ * Takes a slot, or refuses.
+ *
+ * The availability check is re-run here against the live register rather than
+ * trusting what the form was showing. A devotee can sit on the booking page for ten
+ * minutes while somebody else takes the date, and the client-side calendar that said
+ * "free" when it rendered is exactly the stale fact this guard exists to catch.
+ */
+export async function createFacilityBooking(input: {
+  userId: UUID
+  venueId: UUID
+  date: ISODate
+  slot: FacilitySlotKey
+  eventType: FacilityBooking['eventType']
+  expectedGuests: number
+  items: FacilityBooking['items']
+  discountPct: number
+  contactPhone: string
+  notes?: string
+}): Promise<FacilityBooking> {
+  await simulateLatency()
+
+  const venue = FACILITY_VENUES.find((v) => v.id === input.venueId)
+  if (!venue) throw new FacilityUnavailableError('That venue no longer exists.')
+
+  const state = slotAvailability({
+    venue,
+    day: input.date,
+    slot: input.slot,
+    bookings: FACILITY_BOOKINGS,
+    now: new Date(),
+  })
+  if (state.state === 'taken') {
+    throw new FacilityUnavailableError(
+      `${venue.name} was taken for that slot while you were booking.`,
+    )
+  }
+  if (state.state === 'closed') throw new FacilityUnavailableError(state.reason)
+
+  const price = priceBooking({
+    venue,
+    slot: input.slot,
+    items: input.items,
+    discountPct: input.discountPct,
+  })
+
+  const seq = FACILITY_BOOKINGS.length + 1
+  const booking: FacilityBooking = {
+    id: `fac_${String(seq).padStart(4, '0')}_${Date.now().toString(36)}`,
+    reference: `HALL-${2600 + seq}`,
+    userId: input.userId,
+    venueId: input.venueId,
+    date: input.date,
+    slot: input.slot,
+    eventType: input.eventType,
+    expectedGuests: input.expectedGuests,
+    items: input.items,
+    hireCharge: price.hireCharge,
+    addOnsTotal: price.addOnsTotal,
+    discountPct: price.discountPct,
+    total: price.total,
+    deposit: price.deposit,
+    status: 'pending',
+    contactPhone: input.contactPhone,
+    notes: input.notes,
+    createdAt: new Date().toISOString(),
+  }
+
+  FACILITY_BOOKINGS.push(booking)
+  FACILITY_BOOKINGS.sort((a, b) => a.date.localeCompare(b.date))
+  persistFacility((s) => s.created.push(clone(booking)))
+  return clone(booking)
+}
+
+/**
+ * Moves a booking to a new status.
+ *
+ * Confirming re-checks the slot against every *other* holder, because a date can
+ * collect two pending requests and the office must not be able to confirm both.
+ */
 export async function setFacilityBookingStatus(
   id: UUID,
-  status: FacilityBooking['status'],
-): Promise<void> {
+  status: FacilityBookingStatus,
+  opts?: { declineReason?: string; officeNote?: string },
+): Promise<FacilityBooking> {
   await simulateLatency()
-  const fb = FACILITY_BOOKINGS.find((x) => x.id === id)
-  if (fb) fb.status = status
+  const booking = FACILITY_BOOKINGS.find((x) => x.id === id)
+  if (!booking) throw new Error(`No facility booking ${id}`)
+
+  if (status === 'confirmed') {
+    const venue = FACILITY_VENUES.find((v) => v.id === booking.venueId)
+    if (venue) {
+      const state = slotAvailability({
+        venue,
+        day: booking.date,
+        slot: booking.slot,
+        bookings: FACILITY_BOOKINGS,
+        now: new Date(),
+        ignoreBookingId: booking.id,
+      })
+      if (state.state === 'taken') {
+        throw new FacilityUnavailableError(
+          `${venue.name} is already confirmed for that slot (${state.by.reference}).`,
+        )
+      }
+    }
+  }
+
+  booking.status = status
+  booking.decidedAt = new Date().toISOString()
+  if (opts?.declineReason !== undefined) booking.declineReason = opts.declineReason
+  if (opts?.officeNote !== undefined) booking.officeNote = opts.officeNote
+  saveFacilityBooking(booking)
+  return clone(booking)
+}
+
+/** Records the refundable deposit as received. */
+export async function recordFacilityDeposit(id: UUID): Promise<FacilityBooking> {
+  await simulateLatency()
+  const booking = FACILITY_BOOKINGS.find((x) => x.id === id)
+  if (!booking) throw new Error(`No facility booking ${id}`)
+  booking.depositPaidAt = new Date().toISOString()
+  saveFacilityBooking(booking)
+  return clone(booking)
 }
 
 /* ----------------------------------------------------------------- projects */

@@ -1,5 +1,6 @@
 import {
   BadgeCheck,
+  Building2,
   BadgeDollarSign,
   CalendarCheck2,
   BookOpen,
@@ -212,7 +213,10 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         roles: ['admin', 'committee'],
       },
       { to: '/calendar', label: 'Calendar CMS', Icon: CalendarDays, roles: ['admin', 'committee'] },
-      // Facility bookings, disabled: { to: '/facility', Icon: Building2, roles: ['admin'] }
+      // The hall book. The committee runs the programme the halls are let around, so
+      // it decides the dates alongside the administrator; finance is left out because
+      // the hire income reaches it through the donation ledger, not through this queue.
+      { to: '/facility', label: 'Hall bookings', Icon: Building2, roles: ['admin', 'committee'] },
       { to: '/settings', label: 'Settings', Icon: Settings, roles: ['admin'] },
     ],
   },

@@ -90,6 +90,18 @@ export const LOCAL_KEYS = {
    * is not, because it is recomputed from the lines on load so the two cannot drift.
    */
   projects: `${NS}:projects`,
+  /**
+   * Hall bookings, and the office decisions taken on them.
+   *
+   * This one must persist for the same reason `approvals` must: the flow spans two
+   * sign-ins. A devotee requests the Kalyana Mandapam, the office signs in to confirm
+   * it, and the devotee signs back in to read the decision — three page loads. Without
+   * this, the request is gone before anyone can act on it, and worse, the slot it was
+   * holding silently frees up, so the availability calendar starts lying.
+   *
+   * Created rows are stored whole: a request has no seeded original to fall back to.
+   */
+  facility: `${NS}:facility`,
 } as const
 
 export function readLocal<T>(key: string, fallback: T): T {

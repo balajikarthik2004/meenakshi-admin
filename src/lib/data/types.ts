@@ -608,14 +608,106 @@ export interface EventSponsorship {
   price: Money
 }
 
+/**
+ * The hall programme: what can be hired, for how long, and by whom.
+ *
+ * A venue is hired by the *slot* rather than by the day. A wedding occupies a
+ * morning, a reception the evening after it, and the two are different bookings at
+ * different prices — modelling the day as one indivisible unit both over-blocks the
+ * hall and undercharges for it. `full-day` is a slot of its own rather than the pair
+ * of halves, because it is priced below the sum of the two and because the overlap
+ * test is simpler when every booking names exactly one slot.
+ */
+export type FacilitySlotKey = 'morning' | 'evening' | 'full-day'
+
+export interface FacilitySlotSpec {
+  key: FacilitySlotKey
+  label: string
+  /** Local clock, 24h. Also what the overlap test in `lib/facility.ts` compares. */
+  startHour: number
+  endHour: number
+  /** Pre-formatted for the chip, so three surfaces cannot format it three ways. */
+  hint: string
+}
+
+export type FacilityVenueKind = 'hall' | 'mini-hall' | 'dining' | 'open-air'
+
+export interface FacilityVenue {
+  id: UUID
+  slug: string
+  name: string
+  kind: FacilityVenueKind
+  capacity: number
+  /** Hire charge per slot — a full day is deliberately cheaper than two halves. */
+  rates: Record<FacilitySlotKey, Money>
+  /** Refundable, held against damage and overrun. Quoted apart from the total. */
+  deposit: Money
+  /**
+   * Bookings closer than this are refused.
+   *
+   * The office has to find a caretaker, warn the kitchen and get the hall cleaned;
+   * the main hall needs more warning than the dining room, so this is per venue
+   * rather than one constant.
+   */
+  minNoticeDays: number
+  amenities: string[]
+  description: string
+  /** A venue out of service stays on past bookings but cannot take new ones. */
+  active: boolean
+}
+
+export type FacilityEventType =
+  | 'wedding'
+  | 'reception'
+  | 'upanayanam'
+  | 'seemantham'
+  | 'birthday'
+  | 'satsang'
+  | 'community'
+  | 'other'
+
+/**
+ * `declined` is the office refusing a request; `cancelled` is the devotee or the
+ * office withdrawing one already made. Collapsing them loses the only thing the
+ * hall register is later asked — whether the temple turned the date down, or the
+ * family did.
+ */
+export type FacilityBookingStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'declined'
+  | 'cancelled'
+  | 'completed'
+
 export interface FacilityBooking {
   id: UUID
+  /** Short, quotable, and what the devotee reads out on the phone. */
+  reference: string
   userId: UUID
-  facility: 'main-hall' | 'mini-hall' | 'canteen'
+  venueId: UUID
+  /** Midnight local on the day hired. The slot carries the time. */
   date: ISODate
+  slot: FacilitySlotKey
+  eventType: FacilityEventType
+  expectedGuests: number
   items: { label: string; qty: number; price: Money }[]
+  /** The four figures are stored, not recomputed, so a later rate change cannot
+      silently restate what a family was quoted. */
+  hireCharge: Money
+  addOnsTotal: Money
+  discountPct: number
   total: Money
-  status: 'pending' | 'confirmed' | 'cancelled'
+  deposit: Money
+  depositPaidAt?: ISODate
+  status: FacilityBookingStatus
+  contactPhone: string
+  /** From the devotee — catering, muhurtham timing, anything the office should know. */
+  notes?: string
+  /** Staff-only. Never shown in the devotee app. */
+  officeNote?: string
+  declineReason?: string
+  createdAt: ISODate
+  decidedAt?: ISODate
 }
 
 /**

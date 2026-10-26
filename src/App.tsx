@@ -165,7 +165,10 @@ export default function App() {
                 <Route path="/events/:id/edit" element={<EventEditor mode="edit" />} />
 
                 <Route path="/calendar" element={<CalendarCMS />} />
-                <Route path="/facility" element={<FacilityAdmin />} />
+                {/* The hall book, same pair as the rest of Programme. */}
+                <Route element={<RequireRole roles={['admin', 'committee']} fallback="/dashboard" />}>
+                  <Route path="/facility" element={<FacilityAdmin />} />
+                </Route>
                 <Route path="/transparency" element={<Transparency />} />
                 <Route path="/settings" element={<Settings />} />
 
