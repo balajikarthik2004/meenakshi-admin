@@ -44,11 +44,11 @@ const expense = (
 /**
  * Four projects, all genuinely under way, deliberately at four different places.
  *
- * The lift is nearly built and nearly paid for; the rajagopuram is the flagship and
- * has barely started on a target six times larger; the sannidhi is mid-build; the
- * solar array is still on paper. A programme where every bar sat at the same place
- * would make the funding meter look decorative — the whole point of publishing it is
- * that the four do not look alike.
+ * The classrooms are nearly finished and nearly paid for; the rajagopuram is the
+ * flagship and has barely started on a target six times larger; the sannidhi is
+ * mid-build; the kitchen is still on paper. A programme where every bar sat at the
+ * same place would make the funding meter look decorative — the whole point of
+ * publishing it is that the four do not look alike.
  */
 const PROJECT_SEED: Project[] = [
   {
@@ -142,13 +142,13 @@ const PROJECT_SEED: Project[] = [
   },
   {
     id: 'prj_0003',
-    slug: 'solar-roof',
-    imageUrl: '/projects/solar-roof.jpg',
-    cover: 'solar',
-    title: 'Solar Roof & Battery Backup',
-    summary: 'A rooftop array and battery, to cut the power bill and survive outages.',
+    slug: 'annadanam-community-meals',
+    imageUrl: '/projects/annadanam.jpg',
+    cover: 'annadanam',
+    title: 'Annadanam & Community Meals',
+    summary: 'A proper kitchen and dining hall, so the weekend meal can be served every day.',
     description:
-      'Electricity is the third largest line in the facilities budget, and the temple lost power for two days during the last freeze with four hundred pounds of annadanam stock in the coolers. A ninety-kilowatt rooftop array with battery backup is projected to cover roughly two-thirds of annual consumption and to keep the kitchen and the sanctum lit through an outage.',
+      'Annadanam is cooked in a domestic kitchen with two ranges and carried across the courtyard in trays, which is why the free meal runs at weekends and festivals rather than daily. The project fits out a commissary kitchen with steam kettles, cold storage and a wash line, and roofs the dining terrace, so that four hundred plates a day can be cooked and served where the devotees already sit.',
     targetAmount: 72_000,
     raisedAmount: 8_240,
     spentAmount: 5_900,
@@ -158,39 +158,45 @@ const PROJECT_SEED: Project[] = [
     startedAt: daysAgo(55),
     targetCompletion: daysAhead(380),
     notes: [
-      'Roof load assessment passed — no structural reinforcement required.',
-      'Interconnection application filed with CenterPoint Energy.',
-      'The federal clean-energy credit is not available to a 501(c)(3); elective pay is being explored.',
-      'Projected to save roughly $9,800 a year against the current facilities budget.',
+      'Kitchen layout drawn to the county food-establishment code; grease hood is the long-lead item.',
+      'Change-of-use application filed with the Brazoria County health department.',
+      'The weekend meal currently tops out at a hundred and sixty plates; the fitted kitchen is sized for four hundred.',
+      'Separate from the annadanam fund in the operating budget, which pays for the food itself.',
     ],
     expenses: [
-      expense(daysAgo(48), 'Lone Star Structural', 'Roof load assessment', 2_150, 'INV-8820'),
+      expense(
+        daysAgo(48),
+        'Gulf Coast Kitchen Design',
+        'Commissary kitchen layout and equipment schedule',
+        2_150,
+        'INV-8820',
+      ),
       expense(
         daysAgo(30),
-        'CenterPoint Energy',
-        'Interconnection application fee',
+        'Brazoria County Health Dept.',
+        'Food establishment plan review fee',
         600,
         'APP-11574',
       ),
       expense(
         daysAgo(16),
-        'Helios Design Group',
-        'Shading study and array layout',
+        'Bayou Food Safety',
+        'HACCP plan and volunteer handler training',
         1_250,
         'INV-8841',
       ),
-      expense(daysAgo(5), 'SunRail Supply', 'Mounting rail deposit', 1_900, 'INV-8859'),
+      expense(daysAgo(5), 'Southern Restaurant Supply', 'Steam kettle deposit', 1_900, 'INV-8859'),
     ],
   },
   {
     id: 'prj_0004',
-    slug: 'accessibility-lift',
-    imageUrl: '/projects/accessibility-ramp.jpg',
-    cover: 'access',
-    title: 'Accessibility Lift & Ramp',
-    summary: 'Step-free access to the upper hall, for elderly and wheelchair devotees.',
+    slug: 'vedic-education',
+    imageUrl: '/projects/vedic-school.jpg',
+    cover: 'education',
+    title: 'Vedic Education & VHS School',
+    summary: 'Two dedicated classrooms for the Vedic Heritage School, which has outgrown the hall.',
     description:
-      'The upper hall is reached by eighteen steps and nothing else, which means the devotees who attend most faithfully are the ones least able to get to the Friday discourse. The project adds a compliant ramp at the east entrance and a platform lift to the upper hall, together with a step-free route from the accessible parking bays.',
+      'The Vedic Heritage School teaches the nine Purna Vidya levels on alternate Sundays, and does it by partitioning the community hall with folding screens — which means a shloka class and a chess club three feet apart, and a waiting list the coordinators cannot clear. The project converts the annexe into two sound-separated classrooms with storage, so the school can take the levels it is currently turning away.',
     targetAmount: 26_000,
     raisedAmount: 16_000,
     spentAmount: 12_000,
@@ -200,25 +206,31 @@ const PROJECT_SEED: Project[] = [
     startedAt: daysAgo(190),
     targetCompletion: daysAhead(95),
     notes: [
-      'ADA compliance review complete; ramp gradient fixed at 1:12 with two landings.',
-      'Platform lift ordered — sixty per cent deposit paid, delivery in ten weeks.',
-      'Ramp groundworks and handrail complete at the east entrance.',
-      'The senior devotees’ committee asked that this be prioritised, and the board agreed.',
+      'Drawings approved; two classrooms of twenty-four seats, with a shared store for the readers.',
+      'Partition walls and flooring complete; acoustic treatment to follow.',
+      'Purna Vidya readers and recitation books ordered for the first full year.',
+      'Sized against the waiting list the coordinators carried through the last two terms.',
     ],
     expenses: [
       expense(
         daysAgo(178),
-        'Access Design TX',
-        'ADA compliance review and drawings',
+        'Sastry Associates',
+        'Classroom layout and fire-egress drawings',
         1_400,
         'INV-6612',
       ),
-      expense(daysAgo(160), 'City of Pearland', 'Building permit application', 300, 'PRM-5280'),
-      expense(daysAgo(96), 'Brazos Site Works', 'Ramp groundworks and handrail', 2_500, 'INV-6679'),
+      expense(daysAgo(160), 'City of Pearland', 'Change-of-use permit application', 300, 'PRM-5280'),
+      expense(
+        daysAgo(96),
+        'Brazos Site Works',
+        'Partition walls and flooring, two classrooms',
+        2_500,
+        'INV-6679',
+      ),
       expense(
         daysAgo(38),
-        'Savaria Texas',
-        'Platform lift, sixty per cent deposit',
+        'Vidya Bharati Press',
+        'Desks, book-stands and first-year readers',
         7_800,
         'INV-6744',
       ),

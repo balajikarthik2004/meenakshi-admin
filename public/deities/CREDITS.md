@@ -16,7 +16,20 @@ meenakshi.org or any other temple site.
 | `durga.webp` | Mahishasura-mardini | Unknown, 19th c. | Public domain |
 | `ayyappan.webp` | Thousand Pillar Hall, Meenakshi Temple | Wikimedia contributor | Public domain |
 | `lamps.webp` | Festival of Lamps, Chennai | McKay Savage | CC BY 2.0 |
-| `deepam.webp` | Karthigai Deepam Festival | Wikimedia contributor | CC BY-SA 4.0 |
+| `deepavali.jpg` | Diwali lamps in India 04 | Subharnab Majumdar | CC BY-SA 4.0 |
+| `karthigai-deepam.jpg` | Karthigai Deepam | Wikimedia contributor | Public domain |
+
+## A photograph that was removed
+
+`deepam.webp` was captioned on Commons as "Karthigai Deepam Festival" and was being
+used as the artwork for both Deepavali and Karthigai Deepam across the site. It is in
+fact a personal selfie: an identifiable private individual beside a home kolam. A
+private person's photograph should not be a temple's festival banner whatever its
+licence says, so the file was deleted and replaced by two photographs of lamps, which
+is what both festivals are actually about.
+
+Worth repeating for whoever picks the next image: a permissive licence answers whether
+you *may* publish something, not whether you *should*.
 
 ## A note on `ayyappan.webp`
 

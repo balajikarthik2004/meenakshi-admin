@@ -1,4 +1,4 @@
-import type { ClassEnrolment, SchoolClass, SchoolTerm } from '@/lib/data/types'
+import type { ClassEnrolment, ISODate, SchoolClass, SchoolTerm } from '@/lib/data/types'
 import { DEVOTEES } from './users'
 import { chance, id, int, pick, rng } from './seed'
 import { holdsSeat } from '@/lib/school'
@@ -22,23 +22,77 @@ import { holdsSeat } from '@/lib/school'
 export const SCHOOL_TERM: SchoolTerm = {
   id: 'trm_2026',
   name: '2026–27 Academic Year',
-  // The dates the school publishes for the year.
+  // Orientation through the last class, as the school's calendar publishes them.
   startDate: new Date(2026, 7, 30).toISOString(),
   endDate: new Date(2027, 4, 23).toISOString(),
   registrationOpens: new Date(2026, 2, 1).toISOString(),
   /*
-   * Late enrolment stays open into the spring.
+   * Registration really closes before the year opens.
    *
-   * The school's published cut-off is just before the first Sunday, but it does in
-   * practice take families who arrive mid-year — the coordinators place the child
-   * after a short assessment, which is what the prerequisite note on every class
-   * page describes. Closing in September would also mean the whole module read
-   * "registration closed" for eight months of every year, including right now.
-   * Set this back to `new Date(2026, 8, 20)` to enforce the published cut-off.
+   * The school's own page says registration for the *following* year opens the
+   * March before it, so by late October the current year is under way and nothing
+   * can be registered for it. Faithful — and it would leave the whole module
+   * reading "closed" for most of the year, including today, with nothing to
+   * demonstrate.
+   *
+   * So the published cut-off is kept below and overridden by one flag. Set
+   * `LATE_ENROLMENT_OPEN` to false to enforce the real calendar.
    */
-  registrationCloses: new Date(2027, 2, 31).toISOString(),
+  registrationCloses: new Date(2026, 7, 29).toISOString(),
   cadence: 'Alternate Sundays',
-  status: 'open',
+  status: 'in-progress',
+}
+
+/** TEMPORARY — see the note on `registrationCloses`. Set to false to restore it. */
+const LATE_ENROLMENT_OPEN = true
+
+if (LATE_ENROLMENT_OPEN) {
+  SCHOOL_TERM.registrationCloses = new Date(2027, 2, 31).toISOString()
+  SCHOOL_TERM.status = 'open'
+}
+
+/**
+ * The published class calendar.
+ *
+ * The school teaches on named, numbered Sundays rather than simply "every other
+ * week", and the dates are not a clean fortnightly series — the gap between Class
+ * #5 and #6 is three weeks, and #8 and #9 are consecutive. Deriving them from a
+ * rule would produce a timetable that disagrees with the one handed out on the
+ * first day, so they are listed exactly as published.
+ *
+ * Only the Fall is published so far; the Spring dates follow in the new year.
+ */
+export interface SchoolSession {
+  label: string
+  date: ISODate
+  /** Where this Sunday differs from the usual 8:45–12:30. */
+  note?: string
+}
+
+export const HWP_CALENDAR: SchoolSession[] = [
+  { label: 'Orientation', date: new Date(2026, 7, 30).toISOString() },
+  { label: 'Class #2', date: new Date(2026, 8, 13).toISOString() },
+  { label: 'Class #3', date: new Date(2026, 8, 27).toISOString() },
+  { label: 'Class #4', date: new Date(2026, 9, 11).toISOString() },
+  {
+    label: 'Class #5',
+    date: new Date(2026, 9, 25).toISOString(),
+    note: 'Saraswathi Pooja Day — 9:15–10:45 AM',
+  },
+  { label: 'Class #6', date: new Date(2026, 10, 15).toISOString() },
+  { label: 'Class #7', date: new Date(2026, 10, 29).toISOString() },
+  { label: 'Class #8', date: new Date(2026, 11, 6).toISOString() },
+  { label: 'Class #9', date: new Date(2026, 11, 13).toISOString() },
+]
+
+/** The school's own caveat, reproduced so the page cannot overstate the calendar. */
+export const CALENDAR_CAVEAT =
+  'These class dates are not final and are subject to change in accordance with temple requirements.'
+
+/** The next published session on or after a given day. */
+export function nextSession(on: Date = new Date()): SchoolSession | undefined {
+  const t = on.getTime()
+  return HWP_CALENDAR.find((s) => new Date(s.date).getTime() >= t)
 }
 
 /** Where the school teaches. Used on the class cards and the printed register. */
@@ -52,36 +106,142 @@ const ROOMS = {
 } as const
 
 /**
- * The nine Purna Vidya levels.
+ * The eleven Purna Vidya classes, as the school describes them.
  *
- * Built rather than typed out nine times: they differ by level number, age band,
- * room and teacher, and spelling that out as nine near-identical literals invites
- * exactly the copy-paste mistake that puts two levels in one room.
+ * Not "Level 1" through "Level 9". The home page summarises the curriculum as nine
+ * progressive levels, but the Classes Description page sets out eleven classes with
+ * names of their own — Ramayana, Bhagavath Purana, Values — and a parent looking for
+ * where their child goes is looking for those names. Mahabharata is two classes
+ * because the school splits the itihasa in two, and the ages are theirs.
  */
-const PURNA_VIDYA_LEVELS: { level: number; minAge: number; maxAge: number; theme: string }[] = [
+const PURNA_VIDYA: {
+  key: string
+  name: string
+  minAge: number
+  maxAge: number
+  summary: string
+  description: string
+}[] = [
   {
-    level: 1,
+    key: 'beginners-1',
+    name: 'Beginners 1',
     minAge: 5,
     maxAge: 6,
-    theme: 'Our temple, our prayers, and the stories behind them.',
+    summary: 'The deities, and the stories that carry their morals.',
+    description:
+      'The entry-level class. It introduces the various Gods and deities — Lord Krishna, Lord ' +
+      'Ganesha and others — through short stories, and draws out the moral of each. Tales from ' +
+      'the Panchatantra are covered alongside them.',
   },
   {
-    level: 2,
+    key: 'beginners-2',
+    name: 'Beginners 2',
     minAge: 6,
     maxAge: 7,
-    theme: 'Daily prayer, the pancha mahayajnas, and simple shlokas.',
+    summary: 'Shiva, Parvathi, Ganesha and Vishnu, and how they relate.',
+    description:
+      'Well-known stories of Lord Shiva, Goddess Parvathi, Lord Ganesha and Lord Vishnu, with ' +
+      'other celestial beings introduced. These simple stories from the Puranas let children ' +
+      'understand the deities and the relationships between them.',
   },
-  { level: 3, minAge: 7, maxAge: 8, theme: 'The Ramayana told in full, and what it asks of us.' },
-  { level: 4, minAge: 8, maxAge: 9, theme: 'The Mahabharata, and dharma when the choice is hard.' },
-  { level: 5, minAge: 9, maxAge: 10, theme: 'The deities, their forms, and what each one means.' },
-  { level: 6, minAge: 10, maxAge: 11, theme: 'Festivals and samskaras through the temple year.' },
-  { level: 7, minAge: 11, maxAge: 12, theme: 'The Upanishads, opened gently.' },
-  { level: 8, minAge: 13, maxAge: 14, theme: 'The Bhagavad Gita, chapter by chapter.' },
   {
-    level: 9,
-    minAge: 15,
+    key: 'ramayana',
+    name: 'Ramayana',
+    minAge: 7,
+    maxAge: 8,
+    summary: 'The immortal itihasa, and dharma against adharma.',
+    description:
+      'The Ramayana taught in full — the epic that symbolises dharma and adharma. Students learn ' +
+      'the story and the morals that run through it, and work through the characters, what they ' +
+      'did and why.',
+  },
+  {
+    key: 'bhagavath-purana',
+    name: 'Bhagavath Purana',
+    minAge: 8,
+    maxAge: 9,
+    summary: 'The Shrimad Bhagavatam, and the Dasha avatara.',
+    description:
+      'Tales from the Shrimad Bhagavatam: stories of Lord Vishnu, and of kings and devotees such ' +
+      'as Dhruva and Harishchandra, their trials and their adherence to dharma. The class goes on ' +
+      'to the Dasha avatara and what each of the ten teaches.',
+  },
+  {
+    key: 'mahabharata-1',
+    name: 'Mahabharata · Part 1',
+    minAge: 9,
+    maxAge: 10,
+    summary: 'Adi Parva to Virata Parva.',
+    description:
+      'The first half of the Mahabharata, which the school teaches across two classes. From the ' +
+      'origins of the Kuru dynasty through to the thirteen-year exile of the Pandavas. Students ' +
+      'learn the characters and begin to debate the dharma and adharma in what they do.',
+  },
+  {
+    key: 'mahabharata-2',
+    name: 'Mahabharata · Part 2',
+    minAge: 10,
+    maxAge: 11,
+    summary: 'Udyoga Parva to Shanti Parva, and Kurukshetra.',
+    description:
+      'The second half: the Udyoga Parva through to the Shanti Parva, covering the events leading ' +
+      'up to and including the Kurukshetra war, and the arguments on both sides of it.',
+  },
+  {
+    key: 'values',
+    name: 'Values',
+    minAge: 10,
+    maxAge: 11,
+    summary: 'Ethics and morals, and thinking about them independently.',
+    description:
+      'Ethics and morals as taught by our Vedic culture. Students are taught to think ' +
+      'independently about right and wrong — what to do, what not to do, and the reasons behind ' +
+      'the do’s and don’ts rather than the rules alone.',
+  },
+  {
+    key: 'isvara',
+    name: 'Isvara & Religious Discipline',
+    minAge: 11,
+    maxAge: 12,
+    summary: 'Isvara as cause, and the disciplines of practice.',
+    description:
+      'Isvara — the intelligent and material cause of the whole creation — covering the ' +
+      'panchabhutas, ista devatas and navagrahas. The class also studies the forms of religious ' +
+      'discipline: vows, japa, fasting, pilgrimage and charity.',
+  },
+  {
+    key: 'sanatana-dharma',
+    name: 'Religious Culture & Sanatana Dharma',
+    minAge: 12,
+    maxAge: 13,
+    summary: 'The arts, traditions and practices still followed today.',
+    description:
+      'The spiritual and humanistic religious culture of India — its arts and literature, ' +
+      'traditions, practices, vows and pilgrimages. Sanatana Dharma is covered as tradition, ' +
+      'philosophy and practice, exploring purusharthas, samskaras, avatara, karma and rebirth.',
+  },
+  {
+    key: 'vedanta',
+    name: 'Vedanta & Human Development',
+    minAge: 13,
+    maxAge: 14,
+    summary: 'Spiritual, emotional and intellectual growth, for teenagers.',
+    description:
+      'The Vedic philosophies addressing the non-physical aspects of human growth — spiritual, ' +
+      'emotional and intellectual — pitched specifically at teenagers. It also covers the ' +
+      'contributions of Sanatana Dharma to architecture, medicine, science and music, and how to ' +
+      'bring those values into one’s own life.',
+  },
+  {
+    key: 'bhagavad-gita',
+    name: 'Bhagavad Gita',
+    minAge: 14,
     maxAge: 16,
-    theme: 'Vedanta, and carrying it into a life outside the temple.',
+    summary: 'The last class of the programme.',
+    description:
+      'The key teachings of the Bhagavad Gita, their meanings and their implications in a modern ' +
+      'world. The final class of the VHS programme, meant to give a strong foundation for a ' +
+      'spiritual pursuit that continues after school.',
   },
 ]
 
@@ -94,34 +254,31 @@ const PV_TEACHERS = [
 ]
 
 function purnaVidyaClasses(): SchoolClass[] {
-  return PURNA_VIDYA_LEVELS.map((l, i) => ({
-    id: `cls_pv${l.level}`,
-    slug: `purna-vidya-level-${l.level}`,
-    code: `PV-${l.level}`,
-    name: `Purna Vidya · Level ${l.level}`,
+  return PURNA_VIDYA.map((l, i) => ({
+    id: `cls_pv${i + 1}`,
+    slug: `purna-vidya-${l.key}`,
+    code: `PV-${i + 1}`,
+    name: l.name,
     category: 'purna-vidya' as const,
-    summary: l.theme,
-    description:
-      `Level ${l.level} of the Purna Vidya curriculum, the nine-level programme by Sri Dhira ` +
-      `Chaitanya and Swamini Pramananda that forms the spine of the Hindu WISDOM Program. ` +
-      `${l.theme} Classes run alternate Sundays through the academic year, and the level a ` +
-      `child joins is confirmed by the coordinators before the first Sunday.`,
+    summary: l.summary,
+    description: l.description,
     minAge: l.minAge,
     maxAge: l.maxAge,
     audience: 'child' as const,
     day: 0,
     startTime: '08:45',
     endTime: '12:30',
-    room: ROOMS.class(l.level),
+    room: ROOMS.class(i + 1),
     teacher: PV_TEACHERS[i % PV_TEACHERS.length]!,
     fee: 180,
     capacity: 24,
-    // Seeded as a real register would read: the lower levels fill first.
-    enrolled: [22, 24, 21, 19, 17, 15, 12, 10, 7][i]!,
-    prerequisiteClassId: l.level > 1 ? `cls_pv${l.level - 1}` : undefined,
+    // Seeded as a real register reads: the younger classes fill first.
+    enrolled: [22, 24, 21, 19, 17, 15, 14, 12, 10, 8, 7][i]!,
+    prerequisiteClassId: i > 0 ? `cls_pv${i}` : undefined,
     notes: [
-      'Includes the Purna Vidya workbook and materials for the year.',
-      'Alternate Sundays — the published calendar is handed out on the first day.',
+      'Purna Vidya teaching guides and books are provided — there is no separate cost for books.',
+      'Alternate Sundays. The published calendar is handed out at Orientation.',
+      'At least 70% attendance is expected across the year.',
     ],
     active: true,
   }))
@@ -325,13 +482,16 @@ const OTHER_CLASSES: SchoolClass[] = [
     audience: 'child',
     day: 0,
     startTime: '11:45',
-    endTime: '12:30',
+    endTime: '12:15',
     room: ROOMS.yoga,
     teacher: 'Sri Mohan Das',
     fee: 90,
     capacity: 30,
     enrolled: 18,
-    notes: ['Mats are provided.'],
+    notes: [
+      'Thirty minutes. Mats are provided — please dress comfortably.',
+      'Parents are welcome to join, space permitting.',
+    ],
     active: true,
   },
   {
@@ -387,24 +547,30 @@ const OTHER_CLASSES: SchoolClass[] = [
     id: 'cls_shl',
     slug: 'shloka-assembly',
     code: 'ENR-1',
-    name: 'Shloka Assembly',
+    name: 'Assembly & Bhajan',
     category: 'enrichment',
-    summary: 'The whole school chants together before class.',
+    summary: 'Four assembly groups, by age, before class.',
     description:
-      'Every school Sunday opens with the whole school chanting together in the upper hall. ' +
-      'Included for every enrolled student — there is nothing to book.',
+      'Every school Sunday opens with assembly. There are four groups — Junior, Junior ' +
+      'Intermediate, Senior Intermediate and Senior — and a student is placed in theirs by age. ' +
+      'The session lasts thirty minutes. Included for every enrolled student, so there is ' +
+      'nothing to book.',
     minAge: 5,
     maxAge: 16,
     audience: 'child',
     day: 0,
-    startTime: '08:45',
-    endTime: '09:00',
+    startTime: '09:15',
+    endTime: '09:45',
     room: ROOMS.hall,
     teacher: 'VHS Coordinators',
     fee: 0,
     capacity: 200,
     enrolled: 147,
-    notes: ['Included with any Purna Vidya enrolment.'],
+    notes: [
+      'Four groups: Junior, Junior Intermediate, Senior Intermediate and Senior.',
+      'Students arriving after 9:45 AM may need help joining without disturbing others.',
+      'Parents are welcome to observe; seating is limited.',
+    ],
     active: true,
   },
   {
@@ -437,13 +603,14 @@ const OTHER_CLASSES: SchoolClass[] = [
     code: 'ENR-3',
     name: 'Seva Programme',
     category: 'enrichment',
-    summary: 'High-school students helping run the school.',
+    summary: 'Selfless service as part of spiritual growth.',
     description:
-      'High-school students assist in the junior classrooms, at the annadanam counter and on ' +
-      'festival days. Hours are logged and a letter is issued at the end of the year for ' +
-      'school service requirements.',
+      'The Seva Project encourages students into selfless service as part of their spiritual ' +
+      'growth — volunteering at the temple, assisting with projects, organising events and ' +
+      'teaching younger students. It also takes in care for the environment, such as cleanups ' +
+      'and tree planting.',
     minAge: 14,
-    maxAge: 18,
+    maxAge: 15,
     audience: 'youth',
     day: 0,
     startTime: '08:45',

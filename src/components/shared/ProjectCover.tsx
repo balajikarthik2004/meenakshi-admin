@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils'
  * These are drawn rather than photographed, and that is the point. Three of the four
  * projects do not exist yet — there is nothing to photograph — and the temple's image
  * library holds deity portraits and festival scenes, none of which belong at the top
- * of a page about a solar array. Putting Raja Ravi Varma's Murugan over "Roof load
- * assessment passed" is the specific thing that makes a page look assembled rather
+ * of a page about a commissary kitchen. Putting Raja Ravi Varma's Murugan over
+ * "Plan review filed" is the specific thing that makes a page look assembled rather
  * than designed.
  *
  * So each project gets an elevation in the temple's own palette: the same treatment a
@@ -21,13 +21,13 @@ import { cn } from '@/lib/utils'
  * different subjects still read as one set.
  */
 
-export type ProjectCoverKey = 'gopuram' | 'shrine' | 'solar' | 'access' | 'default'
+export type ProjectCoverKey = 'gopuram' | 'shrine' | 'annadanam' | 'education' | 'default'
 
 const LABELS: Record<ProjectCoverKey, string> = {
   gopuram: 'Illustration of the temple rajagopuram under scaffolding',
   shrine: 'Illustration of the planned navagraha shrine, with the nine planetary stones',
-  solar: 'Illustration of the temple hall with a rooftop solar array',
-  access: 'Illustration of the planned accessibility ramp and platform lift',
+  annadanam: 'Illustration of the planned annadanam kitchen and dining hall',
+  education: 'Illustration of the planned Vedic Heritage School classrooms',
   default: 'Illustration of the temple campus',
 }
 
@@ -87,8 +87,8 @@ export function ProjectCover({
 
       {cover === 'gopuram' ? <Gopuram /> : null}
       {cover === 'shrine' ? <Shrine /> : null}
-      {cover === 'solar' ? <Solar /> : null}
-      {cover === 'access' ? <Access /> : null}
+      {cover === 'annadanam' ? <Annadanam /> : null}
+      {cover === 'education' ? <Education /> : null}
       {cover === 'default' ? <Campus /> : null}
 
       {/* Ground. One warm band rather than a hard line, so the buildings sit on
@@ -240,103 +240,126 @@ function Shrine() {
   )
 }
 
-/** The hall roof, carrying its array. */
-function Solar() {
+/** The feeding hall, its serving line and a dining row laid with banana leaves. */
+function Annadanam() {
+  const cx = 262
   return (
     <g>
-      {/* Hall: a long low block with a stepped parapet. */}
-      <rect x="92" y="176" width="300" height="77" fill="#9c1f16" opacity="0.9" />
-      <rect x="84" y="166" width="316" height="12" rx="2" fill="#7f150f" />
-      {[110, 150, 190, 230, 270, 310, 350].map((x) => (
-        <rect key={x} x={x} y="196" width="22" height="34" rx="11" fill="#fbf3e4" opacity="0.26" />
-      ))}
-      <rect x="226" y="206" width="32" height="47" rx="2" fill="#5f0f0a" opacity="0.7" />
+      {/* The hall, set back: a pitched roof over an open colonnade, so the eye goes
+          to the meal in front of it rather than to the building. */}
+      <rect x={cx - 124} y="150" width="248" height="88" fill="#5f0f0a" opacity="0.5" />
+      <path d={`M${cx - 136} 140L${cx} 104l136 36Z`} fill="#7f150f" />
+      <rect x={cx - 140} y="138" width="280" height="13" rx="2" fill="#9c1f16" />
+      <rect x={cx - 140} y="149" width="280" height="4" fill="#5f0f0a" opacity="0.45" />
+      <rect x={cx - 1.5} y="92" width="3" height="13" fill="#bf9a3f" />
+      <circle cx={cx} cy="89" r="4" fill="#d7bc78" />
 
-      {/* Three ranks of panels, raked south and stepped back so the array has depth. */}
-      {[
-        { x: 104, y: 150 },
-        { x: 204, y: 150 },
-        { x: 304, y: 150 },
-      ].map((p) => (
-        <g key={p.x}>
+      {/* Colonnade. */}
+      {[-112, -56, 0, 56, 112].map((dx) => (
+        <g key={dx}>
+          <rect x={cx + dx - 7} y="152" width="14" height="80" fill="#9c1f16" opacity="0.92" />
+          <rect x={cx + dx - 10} y="148" width="20" height="7" rx="1.5" fill="#5f0f0a" opacity="0.6" />
+          <rect x={cx + dx - 10} y="226" width="20" height="7" rx="1.5" fill="#5f0f0a" opacity="0.6" />
+        </g>
+      ))}
+      <rect x={cx - 134} y="232" width="268" height="11" fill="#7f150f" opacity="0.85" />
+
+      {/* The serving line: three vessels on a counter inside the colonnade, with the
+          steam that is the whole reason a kitchen needs a hood. */}
+      <rect x={cx - 96} y="206" width="192" height="8" rx="2" fill="#5f0f0a" opacity="0.75" />
+      {[-66, 0, 66].map((dx) => (
+        <g key={dx}>
           <path
-            d={`M${p.x} ${p.y + 14}L${p.x + 10} ${p.y - 12}h62l-10 26Z`}
-            fill="#1c5040"
-            opacity="0.92"
+            d={`M${cx + dx - 21} 190a21 16 0 0 0 42 0Z`}
+            fill="#5f0f0a"
+            opacity="0.9"
           />
-          {[0, 1, 2].map((n) => (
-            <path
-              key={n}
-              d={`M${p.x + 16 + n * 18} ${p.y + 13}l10 -25`}
-              stroke="#4a8a6e"
-              strokeWidth="1.4"
-              opacity="0.7"
-            />
-          ))}
+          <rect x={cx + dx - 24} y="186" width="48" height="5" rx="2.5" fill="#bf9a3f" />
           <path
-            d={`M${p.x + 10} ${p.y - 12}h62`}
-            stroke="#d7bc78"
-            strokeWidth="1.6"
-            opacity="0.8"
-          />
-          <path
-            d={`M${p.x + 6} ${p.y + 14}v12M${p.x + 68} ${p.y + 14}v12`}
-            stroke="#5f0f0a"
-            strokeWidth="2.2"
+            d={`M${cx + dx - 8} 180c0-6 8-6 8-13M${cx + dx + 7} 180c0-7 -8-7 -8-14`}
+            stroke="#9c1f16"
+            strokeWidth="2"
+            fill="none"
+            opacity="0.45"
+            strokeLinecap="round"
           />
         </g>
       ))}
 
-      {/* Battery cabinet at the gable end — the half of the project people forget. */}
-      <rect x="402" y="208" width="34" height="45" rx="3" fill="#5f0f0a" opacity="0.85" />
-      <path d="M414 220l-6 12h8l-4 10 10-14h-8l6-8z" fill="#f2ab21" />
-
-      {/* Rays, picking up the sun already in the frame. */}
-      <g stroke="#f2ab21" strokeWidth="2.2" strokeLinecap="round" opacity="0.55">
-        <path d="M398 44v-16M430 58l12-11M366 58l-12-11M444 86h16" />
-      </g>
+      {/* The dining row, laid out in front: a mat, six banana leaves, rice on each. */}
+      <rect x="44" y="229" width="392" height="22" rx="3" fill="#7f150f" opacity="0.28" />
+      {[76, 140, 204, 268, 332, 396].map((x) => (
+        <g key={x}>
+          <ellipse cx={x} cy="240" rx="27" ry="9" fill="#2c6b50" opacity="0.92" />
+          <path d={`M${x - 24} 240h48`} stroke="#1c5040" strokeWidth="1.2" opacity="0.8" />
+          <circle cx={x - 8} cy="237" r="5" fill="#fbf3e4" opacity="0.92" />
+          <circle cx={x + 10} cy="238" r="3.5" fill="#f2ab21" opacity="0.8" />
+          <circle cx={x + 17} cy="242" r="2.6" fill="#fbf3e4" opacity="0.7" />
+        </g>
+      ))}
     </g>
   )
 }
 
-/** The ramp, its landing and the platform lift to the upper hall. */
-function Access() {
+/** The annexe, converted: two classrooms, and the manuscript stand of the older teaching. */
+function Education() {
+  const cx = 276
   return (
     <g>
-      {/* The upper hall the ramp is reaching. */}
-      <rect x="196" y="120" width="204" height="133" fill="#9c1f16" opacity="0.88" />
-      <rect x="188" y="110" width="220" height="12" rx="2" fill="#7f150f" />
-      {[216, 256, 296, 336].map((x) => (
-        <rect key={x} x={x} y="142" width="22" height="36" rx="11" fill="#fbf3e4" opacity="0.26" />
-      ))}
+      {/* The annexe range. Two storeys, because the classrooms go in above the store. */}
+      <rect x={cx - 118} y="128" width="236" height="125" fill="#9c1f16" opacity="0.88" />
+      <rect x={cx - 126} y="118" width="252" height="12" rx="2" fill="#7f150f" />
+      <path d={`M${cx - 34} 118L${cx} 90l34 28Z`} fill="#7f150f" />
+      {/* The school bell, under the gable. */}
+      <path d={`M${cx - 6} 112v-5a6 6 0 0 1 12 0v5Z`} fill="#d7bc78" />
+      <circle cx={cx} cy="114" r="2" fill="#bf9a3f" />
 
-      {/* The eighteen steps, drawn as the obstacle they are. */}
-      {Array.from({ length: 7 }, (_, i) => (
+      {/* Upper floor: the two classrooms, each three windows wide, lit. */}
+      {[-98, -62, -26, 18, 54, 90].map((dx) => (
         <rect
-          key={i}
-          x={196 - (i + 1) * 11}
-          y={196 + i * 8}
-          width="11"
-          height={57 - i * 8}
-          fill="#7f150f"
-          opacity={0.72 - i * 0.04}
+          key={dx}
+          x={cx + dx}
+          y="140"
+          width="26"
+          height="30"
+          rx="2"
+          fill="#fbf3e4"
+          opacity="0.3"
+        />
+      ))}
+      {/* The party wall between them, which is the point of the work. */}
+      <rect x={cx - 4} y="134" width="8" height="42" fill="#5f0f0a" opacity="0.5" />
+      <rect x={cx - 112} y="178" width="224" height="7" fill="#5f0f0a" opacity="0.5" />
+
+      {/* Ground floor: an arcaded verandah. */}
+      {[-104, -56, -8, 40, 88].map((dx) => (
+        <path
+          key={dx}
+          d={`M${cx + dx} 253v-42a12 12 0 0 1 24 0v42Z`}
+          fill="#5f0f0a"
+          opacity="0.55"
         />
       ))}
 
-      {/* Ramp: two flights and a landing, at the 1:12 the drawings specify. */}
-      <path d="M40 253l82-36h40l-82 36Z" fill="#2c6b50" opacity="0.9" />
-      <path d="M122 217h52v-9h-52Z" fill="#1c5040" opacity="0.9" />
-      <path d="M174 208l64-28h40l-64 28Z" fill="#2c6b50" opacity="0.9" />
-      <g stroke="#bf9a3f" strokeWidth="2.4" fill="none" strokeLinecap="round">
-        <path d="M44 240l80-35M126 205h48M176 196l62-27" />
-        <path d="M60 246v-14M96 230v-14M140 212v-12M196 188v-12" strokeWidth="1.6" opacity="0.8" />
+      {/* Foreground: a manuscript on its stand, open, and a second stand behind it —
+          the Purna Vidya readers the classrooms are being built for. */}
+      <g transform="translate(152,226)">
+        <path d="M-20 24L18 -4M20 24L-18 -4" stroke="#5f0f0a" strokeWidth="5" strokeLinecap="round" />
+        <path d="M-30 -4L0 -12v14l-30 8Z" fill="#fbf3e4" />
+        <path d="M30 -4L0 -12v14l30 8Z" fill="#f6e7cc" />
+        <path d="M0 -12v14" stroke="#bf9a3f" strokeWidth="1.6" />
+        <g stroke="#9c1f16" strokeWidth="1.1" opacity="0.4">
+          <path d="M-25 -2l19-5M-25 3l19-5M6 -7l19 5M6 -2l19 5" />
+        </g>
       </g>
-
-      {/* Platform lift against the hall: shaft, car and call panel. */}
-      <rect x="404" y="128" width="46" height="125" rx="3" fill="#5f0f0a" opacity="0.85" />
-      <rect x="411" y="176" width="32" height="40" rx="2" fill="#fbf3e4" opacity="0.8" />
-      <path d="M427 182v28M419 190l8-8 8 8" stroke="#2c6b50" strokeWidth="2" fill="none" />
-      <circle cx="427" cy="156" r="4" fill="#d7bc78" />
+      {/* And the bundle of readers waiting beside it, tied as a pothi is tied. */}
+      <g transform="translate(86,240)">
+        <rect x="-21" y="2" width="42" height="7" rx="2" fill="#fbf3e4" />
+        <rect x="-18" y="-5" width="38" height="7" rx="2" fill="#f6e7cc" />
+        <rect x="-15" y="-12" width="34" height="7" rx="2" fill="#fbf3e4" />
+        <path d="M-5 -13v23" stroke="#bf9a3f" strokeWidth="2.4" opacity="0.85" />
+        <path d="M-21 9h42" stroke="#9c1f16" strokeWidth="1" opacity="0.3" />
+      </g>
     </g>
   )
 }

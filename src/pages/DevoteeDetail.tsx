@@ -444,8 +444,16 @@ export default function DevoteeDetail() {
 
       {tab === 'family' ? (
         <Card className="p-5">
-          <h2 className="mb-3 font-bold text-lg">Family tree</h2>
-          <FamilyTreeEditor members={members} onChange={setMembers} />
+          <h2 className="font-bold text-lg">Family tree</h2>
+          <p className="mt-1 mb-4 text-sm text-muted">
+            Everyone recorded against {user.name.split(' ')[0]}, arranged by generation. These names
+            are offered one-tap in every sankalpam they sponsor.
+          </p>
+          <FamilyTreeEditor
+            members={members}
+            onChange={setMembers}
+            self={{ name: user.name, nakshatra: user.nakshatra, gothra: user.gothra }}
+          />
           <Button className="mt-4" onClick={save}>
             <Save />
             Save family tree

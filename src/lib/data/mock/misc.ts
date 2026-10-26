@@ -38,7 +38,8 @@ const ALLOCATIONS: TargetAllocation[] = [
   {
     key: 'construction',
     label: 'Temple construction & renovation',
-    detail: 'The rajagopuram, the navagraha sannidhi, the solar roof and the accessibility lift.',
+    detail:
+      'The rajagopuram, the navagraha sannidhi, the annadanam kitchen and the school classrooms.',
     targetAmount: 162_000,
     collectedAmount: PROJECTS_RAISED,
     spentAmount: PROJECTS_SPENT,

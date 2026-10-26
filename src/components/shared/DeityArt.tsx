@@ -74,7 +74,24 @@ export const SCENES: Record<string, DeityImageMeta> = {
     credit: 'J-P Dalbéra · CC BY 2.0',
   },
   lamps: { src: '/deities/lamps.webp', focus: '50% 50%', credit: 'McKay Savage · CC BY 2.0' },
-  deepam: { src: '/deities/deepam.webp', focus: '50% 45%', credit: 'Wikimedia · CC BY-SA 4.0' },
+  /*
+   * Festival scenes.
+   *
+   * `deepam` used to point at a photograph that was, on inspection, a personal
+   * selfie of an identifiable private individual beside a home kolam. It was
+   * serving as the artwork for both Deepavali and Karthigai Deepam across the
+   * site. Two separate lamp photographs replace it, and the file is gone.
+   */
+  deepavali: {
+    src: '/deities/deepavali.jpg',
+    focus: '50% 45%',
+    credit: 'Subharnab Majumdar · CC BY-SA 4.0',
+  },
+  karthigai: {
+    src: '/deities/karthigai-deepam.jpg',
+    focus: '50% 50%',
+    credit: 'Wikimedia Commons · public domain',
+  },
 }
 
 export const resolveImage = (key: string): DeityImageMeta =>
