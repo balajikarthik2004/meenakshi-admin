@@ -11,10 +11,20 @@ import type {
   Donation,
   FacilityBooking,
   FamilyTree,
+  KitchenOrder,
+  ClassEnrolment,
   Membership,
+  SchoolClass,
+  SchoolTerm,
+  MenuItem,
   MembershipTier,
   Money,
+  OrderStatus,
+  ISODate,
+  Pledge,
+  PledgeInstallment,
   Project,
+  ProjectExpense,
   PujaCatalogItem,
   PujaOccurrence,
   PujaPnLRow,
@@ -51,8 +61,14 @@ import {
   EVENTS,
   FACILITY_BOOKINGS,
   FAMILY_TREES,
+  KITCHEN_ORDERS,
+  CLASS_ENROLMENTS,
   MEMBERSHIPS,
+  SCHOOL_CLASSES,
+  SCHOOL_TERM,
+  MENU,
   OCCURRENCES,
+  PLEDGES,
   PROJECTS,
   PUJA_BY_ID,
   PUJA_CATALOG,
@@ -76,6 +92,10 @@ import {
   roleLabel,
 } from './mock'
 import { LOCAL_KEYS, readLocal, writeLocal } from './local'
+import { holdsSeat, isFull, summariseSchool } from '@/lib/school'
+import { isActive, isItemServed, kitchenStatusAt, ticketUrgency } from '@/lib/kitchen'
+import { derivePledgeStatus, pledgeTotals, summarisePledges } from '@/lib/pledge'
+import { summariseProjects } from '@/lib/project'
 import { useAuthStore } from '@/lib/store/auth'
 import { useProfileSignal } from '@/lib/store/profile'
 
@@ -621,6 +641,27 @@ export async function listDonations(userId?: UUID): Promise<Donation[]> {
   return DONATIONS.filter((d) => (userId ? d.userId === userId : true))
 }
 
+/**
+ * Moves the meters a gift is supposed to move.
+ *
+ * A gift to a festival or a capital project is not only a row in the ledger — it is
+ * the number on the page the devotee was looking at when they decided to give, and a
+ * meter that still reads the same figure a moment later reads as a bug. Both targets
+ * are handled in one place because the two call sites that need it (a new gift, and a
+ * locally-saved gift replayed after a reload) must agree, and because a third kind of
+ * earmark will want exactly the same treatment.
+ */
+function applyDonationToFunds(d: Donation) {
+  if (d.eventId) {
+    const event = EVENTS.find((e) => e.id === d.eventId)
+    if (event) event.collectedAmount += d.amount
+  }
+  if (d.projectId) {
+    const project = PROJECTS.find((p) => p.id === d.projectId)
+    if (project) project.raisedAmount += d.amount
+  }
+}
+
 export async function createDonation(
   input: Omit<Donation, 'id' | 'createdAt' | 'taxReceiptId'>,
 ): Promise<Donation> {
@@ -634,13 +675,9 @@ export async function createDonation(
   }
   DONATIONS.unshift(donation)
 
-  // An event sponsorship is money raised *for that festival*, so it moves the festival's
-  // break-even meter as well as landing in the ledger. Without this the devotee sponsors
-  // the flowers and the event page still reads the same figure it did a moment ago.
-  if (donation.eventId) {
-    const event = EVENTS.find((e) => e.id === donation.eventId)
-    if (event) event.collectedAmount += donation.amount
-  }
+  // An earmarked gift is money raised *for that thing*, so it moves the festival's
+  // break-even meter or the project's funding bar as well as landing in the ledger.
+  applyDonationToFunds(donation)
 
   return donation
 }
@@ -680,6 +717,400 @@ export async function getYearlyContributions(
     .sort((a, b) => b.total - a.total)
 }
 
+/* ------------------------------------------------------------------ pledges */
+
+/**
+ * Pledges, and the instalments settled against them.
+ *
+ * Two different things need to survive a reload here, so they are stored apart.
+ * `created` holds whole pledges this browser made, which have no seeded original to
+ * fall back to. `changed` holds only the mutable parts of a seeded pledge, replayed
+ * over the seed — storing the whole record would let a stale copy silently override a
+ * later change to the seed itself. `donations` carries the ledger entries that
+ * settling an instalment minted, because an instalment that stays paid across a
+ * reload while the gift it refers to disappears is a record that contradicts itself.
+ */
+interface SavedPledges {
+  created: Pledge[]
+  changed: Record<
+    UUID,
+    { status: Pledge['status']; cancelledAt?: ISODate; installments: PledgeInstallment[] }
+  >
+  donations: Donation[]
+}
+
+const emptySavedPledges = (): SavedPledges => ({ created: [], changed: {}, donations: [] })
+
+function readSavedPledges() {
+  return readLocal<SavedPledges>(LOCAL_KEYS.pledges, emptySavedPledges())
+}
+
+function persistPledges(mutate: (s: SavedPledges) => void) {
+  const saved = readSavedPledges()
+  mutate(saved)
+  writeLocal(LOCAL_KEYS.pledges, saved)
+}
+
+function hydratePledges() {
+  const saved = readSavedPledges()
+
+  for (const p of saved.created) if (!PLEDGES.some((x) => x.id === p.id)) PLEDGES.unshift(p)
+
+  for (const [id, change] of Object.entries(saved.changed)) {
+    const p = PLEDGES.find((x) => x.id === id)
+    if (!p) continue
+    p.status = change.status
+    p.cancelledAt = change.cancelledAt
+    p.installments = change.installments
+  }
+
+  for (const d of saved.donations) if (!DONATIONS.some((x) => x.id === d.id)) DONATIONS.unshift(d)
+
+  PLEDGES.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+  DONATIONS.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+}
+hydratePledges()
+
+/** Writes whichever half of the store this pledge belongs in. */
+function savePledge(p: Pledge) {
+  persistPledges((s) => {
+    const i = s.created.findIndex((x) => x.id === p.id)
+    if (i >= 0) s.created[i] = clone(p)
+    else
+      s.changed[p.id] = {
+        status: p.status,
+        cancelledAt: p.cancelledAt,
+        installments: clone(p.installments),
+      }
+  })
+}
+
+export async function listPledges(userId?: UUID): Promise<Pledge[]> {
+  await simulateLatency()
+  return PLEDGES.filter((p) => (userId ? p.userId === userId : true))
+}
+
+export async function getPledge(id: UUID): Promise<Pledge | null> {
+  await simulateLatency()
+  return PLEDGES.find((p) => p.id === id) ?? null
+}
+
+/**
+ * Records a pledge payment that has arrived — the register's one consequential action.
+ *
+ * Most pledges are settled by a cheque in the post or a transfer the accounts desk
+ * spots on a statement, so the console has to be able to book one. Doing so mints a
+ * real `Donation`, which is what earns the tax receipt, moves the YTD figure and lands
+ * in the ledger; the instalment then points at it through `pledgeId`, so "which gift
+ * settled this?" has an answer. The pledge's status is re-derived rather than set by
+ * hand, so the badge can never disagree with the rows underneath it.
+ */
+export async function settlePledgeInstallment(
+  pledgeId: UUID,
+  installmentId: UUID,
+  input?: { method?: Donation['paymentMethod'] },
+): Promise<{ pledge: Pledge; donation: Donation } | null> {
+  const pledge = PLEDGES.find((p) => p.id === pledgeId)
+  const installment = pledge?.installments.find((i) => i.id === installmentId)
+  if (!pledge || !installment || installment.status !== 'due') return null
+
+  const donation = await createDonation({
+    userId: pledge.userId,
+    donor: pledge.donor,
+    category: pledge.category,
+    projectId: pledge.projectId,
+    amount: installment.amount,
+    isRecurring: false,
+    paymentMethod: input?.method ?? pledge.intendedMethod,
+    dedicatedTo: pledge.dedicatedTo,
+    pledgeId: pledge.id,
+  })
+
+  installment.status = 'paid'
+  installment.donationId = donation.id
+  installment.paidAt = donation.createdAt
+  pledge.status = derivePledgeStatus(pledge)
+
+  savePledge(pledge)
+  persistPledges((s) => s.donations.unshift(clone(donation)))
+
+  return { pledge, donation }
+}
+
+/**
+ * Writes off the rest of a promise.
+ *
+ * Distinct from deleting it: the register has to be able to say that the temple was
+ * promised $5,000 and did not get it. Instalments already paid stay paid — they were
+ * gifts, and a write-off does not un-give them.
+ */
+export async function writeOffPledge(id: UUID, reason?: string): Promise<Pledge | null> {
+  await simulateLatency()
+  const pledge = PLEDGES.find((p) => p.id === id)
+  if (!pledge || pledge.status === 'cancelled') return null
+  pledge.status = 'cancelled'
+  pledge.cancelledAt = new Date().toISOString()
+  if (reason?.trim()) pledge.note = reason.trim()
+  savePledge(pledge)
+  return pledge
+}
+
+/**
+ * Marks a single instalment as not coming, without writing off the rest of the pledge.
+ *
+ * A devotee who misses one quarter and resumes the next is the common case, and
+ * leaving that instalment permanently overdue makes the chase list lie about how much
+ * work is outstanding.
+ */
+export async function skipPledgeInstallment(
+  pledgeId: UUID,
+  installmentId: UUID,
+): Promise<Pledge | null> {
+  await simulateLatency()
+  const pledge = PLEDGES.find((p) => p.id === pledgeId)
+  const installment = pledge?.installments.find((i) => i.id === installmentId)
+  if (!pledge || !installment || installment.status !== 'due') return null
+  installment.status = 'skipped'
+  pledge.status = derivePledgeStatus(pledge)
+  savePledge(pledge)
+  return pledge
+}
+
+export interface PledgeStats {
+  /** Live pledges only — a written-off promise is not outstanding work. */
+  active: number
+  /** Promised and not yet received. Deliberately never added to a donation total. */
+  outstanding: Money
+  /** Past its due date and unpaid. */
+  overdue: Money
+  overdueCount: number
+  /** Falling due inside the next thirty days — next month's expected post. */
+  dueSoon: Money
+  /** Received against pledges so far, which *is* in the ledger already. */
+  received: Money
+  /** Distinct devotees holding a live pledge. */
+  donors: number
+}
+
+/**
+ * The register's headline figures.
+ *
+ * `outstanding` is reported alongside the collected total on the transparency screen
+ * and never inside it. Committed money that has not arrived is a genuinely useful
+ * thing for a board to see, and a genuinely dangerous thing to add to income.
+ */
+export async function getPledgeStats(): Promise<PledgeStats> {
+  await simulateLatency()
+  const summary = summarisePledges(PLEDGES)
+  const live = PLEDGES.filter((p) => p.status !== 'cancelled')
+  const overdueCount = live.reduce((n, p) => n + pledgeTotals(p).overdueCount, 0)
+
+  return {
+    active: summary.count,
+    outstanding: summary.outstanding,
+    overdue: summary.overdue,
+    overdueCount,
+    dueSoon: summary.dueSoon,
+    received: summary.received,
+    donors: new Set(live.map((p) => p.userId ?? p.donor?.email ?? p.id)).size,
+  }
+}
+
+/* ------------------------------------------------------------------ kitchen */
+
+/**
+ * Orders placed and advanced in this browser.
+ *
+ * The seeded rail is rebuilt from the clock on every load, so it cannot carry a
+ * ticket somebody actually placed. An order is the one record in this module a
+ * devotee will come back for — they are standing in the cafeteria holding a token —
+ * so created orders are stored whole, and the status changes a kitchen makes to a
+ * seeded ticket are stored as a patch replayed over it.
+ */
+interface SavedOrders {
+  created: KitchenOrder[]
+  changed: Record<
+    UUID,
+    Pick<
+      KitchenOrder,
+      'status' | 'acceptedAt' | 'readyAt' | 'collectedAt' | 'cancelledAt' | 'cancelReason'
+    >
+  >
+}
+
+const emptySavedOrders = (): SavedOrders => ({ created: [], changed: {} })
+
+function persistOrders(mutate: (s: SavedOrders) => void) {
+  const saved = readLocal<SavedOrders>(LOCAL_KEYS.kitchen, emptySavedOrders())
+  mutate(saved)
+  writeLocal(LOCAL_KEYS.kitchen, saved)
+}
+
+function hydrateOrders() {
+  const saved = readLocal<SavedOrders>(LOCAL_KEYS.kitchen, emptySavedOrders())
+
+  for (const o of saved.created) {
+    if (!KITCHEN_ORDERS.some((x) => x.id === o.id)) KITCHEN_ORDERS.push(o)
+  }
+  for (const [id, patch] of Object.entries(saved.changed)) {
+    const o = KITCHEN_ORDERS.find((x) => x.id === id)
+    if (o) Object.assign(o, patch)
+  }
+  KITCHEN_ORDERS.sort((a, b) => a.placedAt.localeCompare(b.placedAt))
+}
+hydrateOrders()
+
+/** Writes whichever half of the store this ticket belongs in. */
+function saveOrder(o: KitchenOrder) {
+  persistOrders((s) => {
+    const i = s.created.findIndex((x) => x.id === o.id)
+    if (i >= 0) s.created[i] = clone(o)
+    else
+      s.changed[o.id] = {
+        status: o.status,
+        acceptedAt: o.acceptedAt,
+        readyAt: o.readyAt,
+        collectedAt: o.collectedAt,
+        cancelledAt: o.cancelledAt,
+        cancelReason: o.cancelReason,
+      }
+  })
+}
+
+export async function listMenu(): Promise<MenuItem[]> {
+  await simulateLatency()
+  return clone(MENU)
+}
+
+/**
+ * What the kitchen will actually cook right now.
+ *
+ * Returns nothing at all when the kitchen is shut, rather than a greyed-out board:
+ * the page above it says when the next service opens, which is the only useful thing
+ * to say to somebody who cannot order.
+ */
+export async function listServableMenu(at: Date = new Date()): Promise<MenuItem[]> {
+  await simulateLatency()
+  const status = kitchenStatusAt(at)
+  if (!status.current) return []
+  return clone(MENU.filter((m) => isItemServed(m, status.current!.meal, at.getDay())))
+}
+
+export async function listOrders(filter?: {
+  status?: OrderStatus
+  /** Only what is still in front of the pass. */
+  activeOnly?: boolean
+}): Promise<KitchenOrder[]> {
+  await simulateLatency()
+  return clone(
+    KITCHEN_ORDERS.filter((o) => (filter?.status ? o.status === filter.status : true))
+      .filter((o) => (filter?.activeOnly ? isActive(o.status) : true))
+      .sort((a, b) => a.placedAt.localeCompare(b.placedAt)),
+  )
+}
+
+export async function getOrder(id: UUID): Promise<KitchenOrder | null> {
+  await simulateLatency()
+  return clone(KITCHEN_ORDERS.find((o) => o.id === id) ?? null)
+}
+
+/** One step of the rail: placed → preparing → ready → collected. */
+export async function advanceOrder(
+  id: UUID,
+  to: OrderStatus,
+  reason?: string,
+): Promise<KitchenOrder | null> {
+  await simulateLatency()
+  const o = KITCHEN_ORDERS.find((x) => x.id === id)
+  if (!o || o.status === to) return null
+
+  const stamp = new Date().toISOString()
+  o.status = to
+  if (to === 'preparing') o.acceptedAt = stamp
+  if (to === 'ready') {
+    o.acceptedAt ??= stamp
+    o.readyAt = stamp
+  }
+  if (to === 'collected') {
+    o.acceptedAt ??= stamp
+    o.readyAt ??= stamp
+    o.collectedAt = stamp
+  }
+  if (to === 'cancelled') {
+    o.cancelledAt = stamp
+    o.cancelReason = reason?.trim() || undefined
+  }
+
+  saveOrder(o)
+  return clone(o)
+}
+
+export interface KitchenStats {
+  /** On the rail and not yet picked up by a cook — what the red stickies count. */
+  newTickets: number
+  preparing: number
+  ready: number
+  /** Served today. */
+  collectedToday: number
+  /** Taken today, excluding cancelled tickets. */
+  revenueToday: Money
+  /** Past the time the kitchen itself promised. */
+  late: number
+}
+
+/**
+ * The board's headline counts.
+ *
+ * `newTickets` is the one that drives the alert: an unaccepted ticket is work nobody
+ * has looked at, and on a Sunday lunch the difference between noticing that in ten
+ * seconds and in ten minutes is a family waiting at the hatch.
+ */
+export async function getKitchenStats(): Promise<KitchenStats> {
+  await simulateLatency()
+  const now = new Date()
+  const todayKey = now.toDateString()
+  const todays = KITCHEN_ORDERS.filter((o) => new Date(o.placedAt).toDateString() === todayKey)
+
+  return {
+    newTickets: KITCHEN_ORDERS.filter((o) => o.status === 'placed').length,
+    preparing: KITCHEN_ORDERS.filter((o) => o.status === 'preparing').length,
+    ready: KITCHEN_ORDERS.filter((o) => o.status === 'ready').length,
+    collectedToday: todays.filter((o) => o.status === 'collected').length,
+    revenueToday: todays.filter((o) => o.status !== 'cancelled').reduce((s, o) => s + o.total, 0),
+    late: KITCHEN_ORDERS.filter(
+      (o) =>
+        isActive(o.status) &&
+        ticketUrgency(o.status, o.placedAt, o.promisedMinutes, now) === 'late',
+    ).length,
+  }
+}
+
+/** Takes a dish off the board, or puts it back. Sold out is a kitchen decision. */
+export async function setMenuItemAvailability(
+  id: UUID,
+  available: boolean,
+): Promise<MenuItem | null> {
+  await simulateLatency()
+  const item = MENU.find((m) => m.id === id)
+  if (!item) return null
+  item.available = available
+
+  const saved = readLocal<Record<UUID, boolean>>(LOCAL_KEYS.kitchenMenu, {})
+  saved[id] = available
+  writeLocal(LOCAL_KEYS.kitchenMenu, saved)
+  return clone(item)
+}
+
+/** Sold-out marks have to outlive a reload or the board lies for the rest of service. */
+function hydrateMenuAvailability() {
+  const saved = readLocal<Record<UUID, boolean>>(LOCAL_KEYS.kitchenMenu, {})
+  for (const [id, available] of Object.entries(saved)) {
+    const item = MENU.find((m) => m.id === id)
+    if (item) item.available = available
+  }
+}
+hydrateMenuAvailability()
+
 /* -------------------------------------------------------------- memberships */
 
 export async function getMembership(userId: UUID): Promise<Membership | null> {
@@ -709,6 +1140,205 @@ export async function createMembership(
   const u = USERS.find((x) => x.id === input.userId)
   if (u) u.membershipId = m.id
   return m
+}
+
+/* ------------------------------------------------------------------- school */
+
+/**
+ * Enrolments made in this browser, and the office decisions taken on them.
+ *
+ * Created rows are stored whole — a family that registered has no seeded original
+ * to fall back on, and a lost registration is the one record they will ring about.
+ * Status changes on seeded rows are stored as a patch replayed over the seed, the
+ * shape `hydrateApprovals` uses. Seat counts are recomputed on load rather than
+ * stored, so a class's `enrolled` figure and the rows behind it cannot drift.
+ */
+interface SavedEnrolments {
+  created: ClassEnrolment[]
+  changed: Record<
+    UUID,
+    Pick<ClassEnrolment, 'status' | 'paidAt' | 'withdrawnAt' | 'waitlistPosition'>
+  >
+}
+
+const emptySavedEnrolments = (): SavedEnrolments => ({ created: [], changed: {} })
+
+function persistEnrolments(mutate: (s: SavedEnrolments) => void) {
+  const saved = readLocal<SavedEnrolments>(LOCAL_KEYS.school, emptySavedEnrolments())
+  mutate(saved)
+  writeLocal(LOCAL_KEYS.school, saved)
+}
+
+function hydrateEnrolments() {
+  const saved = readLocal<SavedEnrolments>(LOCAL_KEYS.school, emptySavedEnrolments())
+
+  for (const e of saved.created) {
+    if (!CLASS_ENROLMENTS.some((x) => x.id === e.id)) {
+      CLASS_ENROLMENTS.unshift(e)
+      // A replayed enrolment takes its seat back, exactly as it did when made.
+      if (holdsSeat(e.status)) {
+        const cls = SCHOOL_CLASSES.find((c) => c.id === e.classId)
+        if (cls) cls.enrolled += 1
+      }
+    }
+  }
+
+  for (const [id, patch] of Object.entries(saved.changed)) {
+    const e = CLASS_ENROLMENTS.find((x) => x.id === id)
+    if (!e) continue
+    const heldBefore = holdsSeat(e.status)
+    Object.assign(e, patch)
+    const heldAfter = holdsSeat(e.status)
+    if (heldBefore !== heldAfter) {
+      const cls = SCHOOL_CLASSES.find((c) => c.id === e.classId)
+      if (cls) cls.enrolled = Math.max(0, cls.enrolled + (heldAfter ? 1 : -1))
+    }
+  }
+
+  CLASS_ENROLMENTS.sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+}
+hydrateEnrolments()
+
+function saveEnrolment(e: ClassEnrolment) {
+  persistEnrolments((s) => {
+    const i = s.created.findIndex((x) => x.id === e.id)
+    if (i >= 0) s.created[i] = clone(e)
+    else
+      s.changed[e.id] = {
+        status: e.status,
+        paidAt: e.paidAt,
+        withdrawnAt: e.withdrawnAt,
+        waitlistPosition: e.waitlistPosition,
+      }
+  })
+}
+
+export async function getSchoolTerm(): Promise<SchoolTerm> {
+  await simulateLatency()
+  return clone(SCHOOL_TERM)
+}
+
+export async function listClasses(category?: SchoolClass['category']): Promise<SchoolClass[]> {
+  await simulateLatency()
+  return clone(SCHOOL_CLASSES.filter((c) => (category ? c.category === category : true)))
+}
+
+export async function getClassBySlug(slug: string): Promise<SchoolClass | null> {
+  await simulateLatency()
+  return clone(SCHOOL_CLASSES.find((c) => c.slug === slug) ?? null)
+}
+
+export async function listEnrolments(filter?: {
+  classId?: UUID
+  status?: ClassEnrolment['status']
+}): Promise<ClassEnrolment[]> {
+  await simulateLatency()
+  return clone(
+    CLASS_ENROLMENTS.filter((e) => (filter?.classId ? e.classId === filter.classId : true))
+      .filter((e) => (filter?.status ? e.status === filter.status : true))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+  )
+}
+
+/**
+ * Moves an enrolment to a new status, keeping the class's seat count honest.
+ *
+ * The seat count is adjusted here and nowhere else. A withdrawal frees a place, a
+ * confirmed payment does not take a second one, and promoting someone off the
+ * waiting list takes the place their withdrawal freed — all of which only works
+ * because one function owns the arithmetic.
+ */
+export async function setEnrolmentStatus(
+  id: UUID,
+  status: ClassEnrolment['status'],
+): Promise<ClassEnrolment | null> {
+  await simulateLatency()
+  const e = CLASS_ENROLMENTS.find((x) => x.id === id)
+  if (!e || e.status === status) return null
+
+  const heldBefore = holdsSeat(e.status)
+  e.status = status
+  const heldAfter = holdsSeat(status)
+
+  const stamp = new Date().toISOString()
+  if (status === 'enrolled') {
+    e.paidAt ??= stamp
+    e.waitlistPosition = undefined
+  }
+  if (status === 'withdrawn') e.withdrawnAt = stamp
+
+  if (heldBefore !== heldAfter) {
+    const cls = SCHOOL_CLASSES.find((c) => c.id === e.classId)
+    if (cls) cls.enrolled = Math.max(0, cls.enrolled + (heldAfter ? 1 : -1))
+  }
+
+  saveEnrolment(e)
+  return clone(e)
+}
+
+/**
+ * Confirms a cheque or transfer has arrived.
+ *
+ * The school's own instruction is to pay first and register second, so most of what
+ * this desk does is matching money to a registration already in the list. This is
+ * the action that turns one into a place.
+ */
+export async function confirmEnrolmentPayment(id: UUID): Promise<ClassEnrolment | null> {
+  return setEnrolmentStatus(id, 'enrolled')
+}
+
+/**
+ * Offers a waiting-list place, usually because somebody withdrew.
+ *
+ * Refused when the class has no room, rather than quietly over-filling it: a
+ * coordinator promoting two names into one freed seat is how a classroom ends up
+ * with more children than chairs.
+ */
+export async function promoteFromWaitlist(
+  id: UUID,
+): Promise<{ ok: true; enrolment: ClassEnrolment } | { ok: false; reason: string }> {
+  await simulateLatency()
+  const e = CLASS_ENROLMENTS.find((x) => x.id === id)
+  if (!e) return { ok: false, reason: 'That enrolment is no longer listed.' }
+  if (e.status !== 'waitlisted') return { ok: false, reason: 'This student is not on the list.' }
+
+  const cls = SCHOOL_CLASSES.find((c) => c.id === e.classId)
+  if (!cls) return { ok: false, reason: 'That class is no longer listed.' }
+  if (isFull(cls)) {
+    return { ok: false, reason: `${cls.name} is still full — no place has freed up yet.` }
+  }
+
+  const updated = await setEnrolmentStatus(id, e.fee > 0 ? 'pending-payment' : 'enrolled')
+  return updated
+    ? { ok: true, enrolment: updated }
+    : { ok: false, reason: 'Could not offer the place.' }
+}
+
+/** Takes a class off the catalogue, or puts it back. */
+export async function setClassActive(id: UUID, active: boolean): Promise<SchoolClass | null> {
+  await simulateLatency()
+  const cls = SCHOOL_CLASSES.find((c) => c.id === id)
+  if (!cls) return null
+  cls.active = active
+
+  const saved = readLocal<Record<UUID, boolean>>(LOCAL_KEYS.schoolClasses, {})
+  saved[id] = active
+  writeLocal(LOCAL_KEYS.schoolClasses, saved)
+  return clone(cls)
+}
+
+function hydrateClassActive() {
+  const saved = readLocal<Record<UUID, boolean>>(LOCAL_KEYS.schoolClasses, {})
+  for (const [id, active] of Object.entries(saved)) {
+    const cls = SCHOOL_CLASSES.find((c) => c.id === id)
+    if (cls) cls.active = active
+  }
+}
+hydrateClassActive()
+
+export async function getSchoolStats() {
+  await simulateLatency()
+  return summariseSchool(SCHOOL_CLASSES, CLASS_ENROLMENTS)
 }
 
 /* ------------------------------------------------------------------- events */
@@ -785,12 +1415,198 @@ export async function setFacilityBookingStatus(
   if (fb) fb.status = status
 }
 
-/* ------------------------------------------------------------- transparency */
+/* ----------------------------------------------------------------- projects */
 
-export async function listProjects(): Promise<Project[]> {
+export async function listProjects(status?: Project['status']): Promise<Project[]> {
   await simulateLatency()
-  return clone(PROJECTS)
+  return clone(PROJECTS.filter((p) => (status ? p.status === status : true)))
 }
+
+export async function getProjectBySlug(slug: string): Promise<Project | null> {
+  await simulateLatency()
+  return clone(PROJECTS.find((p) => p.slug === slug) ?? null)
+}
+
+export async function getProjectById(id: UUID): Promise<Project | null> {
+  await simulateLatency()
+  return clone(PROJECTS.find((p) => p.id === id) ?? null)
+}
+
+/**
+ * Gifts earmarked for one project, newest first.
+ *
+ * Presented as *recent contributions* and never as the project's total, because it is
+ * not one: `raisedAmount` is the audited figure the construction budget head carries,
+ * and it includes years of giving that predate this ledger. A list captioned as a
+ * total that quietly was not one would be the single most misleading thing on an
+ * otherwise honest page.
+ */
+export async function listProjectDonations(projectId: UUID, limit = 25): Promise<Donation[]> {
+  await simulateLatency()
+  return DONATIONS.filter((d) => d.projectId === projectId)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+    .slice(0, limit)
+}
+
+/* ---- What the console can change about a project ----------------------------- */
+
+/**
+ * Project edits that must outlive a reload.
+ *
+ * Only the fields a desk actually changes are stored, replayed over the seed at
+ * import — the same shape `hydrateApprovals` uses, and for the same reason: storing
+ * whole projects would let a stale copy silently override a later change to the seed.
+ * Expenses recorded here are held whole, because they exist nowhere else.
+ */
+interface SavedProject {
+  id: UUID
+  progressPct: number
+  status: Project['status']
+  openForDonations: boolean
+  notes: string[]
+  /** Only the lines this console added — seeded expenses stay in the seed. */
+  addedExpenses: ProjectExpense[]
+}
+
+function persistProject(p: Project, addedExpenses: ProjectExpense[]) {
+  const rest = readLocal<SavedProject[]>(LOCAL_KEYS.projects, []).filter((s) => s.id !== p.id)
+  writeLocal(LOCAL_KEYS.projects, [
+    ...rest,
+    {
+      id: p.id,
+      progressPct: p.progressPct,
+      status: p.status,
+      openForDonations: p.openForDonations,
+      notes: clone(p.notes),
+      addedExpenses: clone(addedExpenses),
+    },
+  ])
+}
+
+/** Expense ids this console minted, per project — what `persistProject` has to store. */
+const addedExpenseIds = new Map<UUID, Set<UUID>>()
+
+function hydrateProjects() {
+  for (const saved of readLocal<SavedProject[]>(LOCAL_KEYS.projects, [])) {
+    const p = PROJECTS.find((x) => x.id === saved.id)
+    if (!p) continue
+    p.progressPct = saved.progressPct
+    p.status = saved.status
+    p.openForDonations = saved.openForDonations
+    p.notes = saved.notes
+
+    const ids = new Set<UUID>()
+    for (const e of saved.addedExpenses) {
+      ids.add(e.id)
+      if (!p.expenses.some((x) => x.id === e.id)) p.expenses.push(e)
+    }
+    addedExpenseIds.set(p.id, ids)
+
+    p.expenses.sort((a, b) => b.date.localeCompare(a.date))
+    // Recomputed rather than stored: the spend and the lines behind it cannot be
+    // allowed to disagree, and the only way to guarantee that is to derive one.
+    p.spentAmount = p.expenses.reduce((s, e) => s + e.amount, 0)
+  }
+}
+hydrateProjects()
+
+const addedFor = (p: Project) => {
+  const ids = addedExpenseIds.get(p.id) ?? new Set<UUID>()
+  return p.expenses.filter((e) => ids.has(e.id))
+}
+
+/**
+ * Books a payment out of a project's fund.
+ *
+ * `spentAmount` is recomputed from the lines rather than incremented, so the headline
+ * figure and the statement under it are the same arithmetic and cannot drift apart —
+ * the rule the seed asserts at import is the rule this upholds at runtime.
+ */
+export async function recordProjectExpense(
+  projectId: UUID,
+  input: Omit<ProjectExpense, 'id'>,
+): Promise<Project | null> {
+  await simulateLatency()
+  const p = PROJECTS.find((x) => x.id === projectId)
+  if (!p) return null
+
+  const expense: ProjectExpense = {
+    ...input,
+    id: `exp_${Date.now().toString(36)}`,
+  }
+  p.expenses.unshift(expense)
+  p.expenses.sort((a, b) => b.date.localeCompare(a.date))
+  p.spentAmount = p.expenses.reduce((s, e) => s + e.amount, 0)
+
+  const ids = addedExpenseIds.get(p.id) ?? new Set<UUID>()
+  ids.add(expense.id)
+  addedExpenseIds.set(p.id, ids)
+
+  persistProject(p, addedFor(p))
+  return clone(p)
+}
+
+/**
+ * Updates how far the work has got — which is not how far the funding has got.
+ *
+ * Kept as a figure somebody sets rather than one derived from money, because they are
+ * genuinely different facts: the lift is seventy per cent built on sixty per cent of
+ * its target, and a devotee deciding where to give needs to see both.
+ */
+export async function updateProjectProgress(
+  projectId: UUID,
+  patch: { progressPct?: number; status?: Project['status']; openForDonations?: boolean },
+): Promise<Project | null> {
+  await simulateLatency()
+  const p = PROJECTS.find((x) => x.id === projectId)
+  if (!p) return null
+
+  if (patch.progressPct !== undefined) {
+    p.progressPct = Math.max(0, Math.min(100, Math.round(patch.progressPct)))
+  }
+  if (patch.status !== undefined) p.status = patch.status
+  if (patch.openForDonations !== undefined) p.openForDonations = patch.openForDonations
+
+  persistProject(p, addedFor(p))
+  return clone(p)
+}
+
+/** Adds a line to the public update list a devotee reads on the project page. */
+export async function addProjectNote(projectId: UUID, note: string): Promise<Project | null> {
+  await simulateLatency()
+  const p = PROJECTS.find((x) => x.id === projectId)
+  if (!p || !note.trim()) return null
+  p.notes = [note.trim(), ...p.notes]
+  persistProject(p, addedFor(p))
+  return clone(p)
+}
+
+export interface ProjectStats {
+  count: number
+  open: number
+  target: Money
+  raised: Money
+  spent: Money
+  /** Raised less spent — the money actually sitting in the capital fund. */
+  balance: Money
+  stillToRaise: Money
+}
+
+export async function getProjectStats(): Promise<ProjectStats> {
+  await simulateLatency()
+  const s = summariseProjects(PROJECTS)
+  return {
+    count: s.count,
+    open: s.open,
+    target: s.target,
+    raised: s.raised,
+    spent: s.spent,
+    balance: s.balance,
+    stillToRaise: s.stillToRaise,
+  }
+}
+
+/* ------------------------------------------------------------- transparency */
 
 export async function getTransparencySnapshot(): Promise<TransparencySnapshot> {
   await simulateLatency()
@@ -1065,7 +1881,10 @@ function persistVolunteering(mutate: (s: SavedVolunteering) => void) {
 }
 
 function hydrateVolunteering() {
-  const s = { ...emptyVolunteering(), ...readLocal<SavedVolunteering>(LOCAL_KEYS.volunteers, emptyVolunteering()) }
+  const s = {
+    ...emptyVolunteering(),
+    ...readLocal<SavedVolunteering>(LOCAL_KEYS.volunteers, emptyVolunteering()),
+  }
 
   for (const v of s.newVolunteers) if (!VOLUNTEERS.some((x) => x.id === v.id)) VOLUNTEERS.push(v)
   for (const c of s.newCampaigns)
@@ -1351,7 +2170,9 @@ function resolveAudience(campaignId: UUID, audience: VolunteerAudience): Volunte
   )
 
   return VOLUNTEERS.filter((v) => v.status === 'active')
-    .filter((v) => (audience.skills.length ? v.skills.some((s) => audience.skills.includes(s)) : true))
+    .filter((v) =>
+      audience.skills.length ? v.skills.some((s) => audience.skills.includes(s)) : true,
+    )
     .filter((v) => (audience.city ? v.city === audience.city : true))
     .filter((v) => (audience.excludeInvited ? !invited.has(v.id) : true))
     .filter((v) => (audience.excludeRostered ? !rostered.has(v.id) : true))
@@ -1452,7 +2273,8 @@ export async function sendCampaignMessage(
     if (becameRecruiting) {
       const created = s.newCampaigns.find((x) => x.id === campaignId)
       if (created) created.status = 'recruiting'
-      else s.campaignPatches[campaignId] = { ...s.campaignPatches[campaignId], status: 'recruiting' }
+      else
+        s.campaignPatches[campaignId] = { ...s.campaignPatches[campaignId], status: 'recruiting' }
     }
   })
 
@@ -1509,7 +2331,9 @@ export async function recordInviteResponse(
         .sort((a, b) => b.gap - a.gap)[0]?.key ?? needKeys[0]
 
     const roleKey =
-      volunteer?.skills.find((s) => needKeys.includes(s)) ?? shortest ?? ('kitchen' as VolunteerSkill)
+      volunteer?.skills.find((s) => needKeys.includes(s)) ??
+      shortest ??
+      ('kitchen' as VolunteerSkill)
 
     assignment = {
       id: nextId('vas', VOLUNTEER_ASSIGNMENTS),
@@ -1535,7 +2359,12 @@ export async function recordInviteResponse(
   const created = assignment
   persistVolunteering((s) => {
     const inv = s.newInvites.find((x) => x.id === inviteId)
-    if (inv) Object.assign(inv, { status: invite.status, respondedAt: invite.respondedAt, note: invite.note })
+    if (inv)
+      Object.assign(inv, {
+        status: invite.status,
+        respondedAt: invite.respondedAt,
+        note: invite.note,
+      })
     else
       s.invitePatches[inviteId] = {
         ...s.invitePatches[inviteId],
@@ -1564,7 +2393,9 @@ export async function listCampaignAssignments(campaignId: UUID): Promise<Volunte
   await simulateLatency()
   return clone(
     VOLUNTEER_ASSIGNMENTS.filter((a) => a.campaignId === campaignId).sort(
-      (a, b) => roleLabel(a.roleKey).localeCompare(roleLabel(b.roleKey)) || a.addedAt.localeCompare(b.addedAt),
+      (a, b) =>
+        roleLabel(a.roleKey).localeCompare(roleLabel(b.roleKey)) ||
+        a.addedAt.localeCompare(b.addedAt),
     ),
   )
 }

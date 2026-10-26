@@ -4,6 +4,8 @@ import {
   ArrowRight,
   BadgeCheck,
   BookOpen,
+  ChefHat,
+  GraduationCap,
   Gauge,
   Loader2,
   Lock,
@@ -19,7 +21,10 @@ import { useAuthStore } from '@/lib/store/auth'
 import { cn } from '@/lib/utils'
 
 const ROLES: {
-  role: Extract<Role, 'admin' | 'priest' | 'board' | 'finance' | 'committee'>
+  role: Extract<
+    Role,
+    'admin' | 'priest' | 'board' | 'finance' | 'committee' | 'kitchen' | 'school'
+  >
   title: string
   Icon: typeof Users
   blurb: string
@@ -52,6 +57,20 @@ const ROLES: {
     Icon: BadgeCheck,
     blurb: 'Verifies that a sponsorship payment actually reached the temple account.',
     sees: ['Payment approvals', 'Donation ledger', 'Tax receipts'],
+  },
+  {
+    role: 'kitchen',
+    title: 'Cafeteria Kitchen',
+    Icon: ChefHat,
+    blurb: 'The order rail by the pass — accept a ticket, cook it, call the token.',
+    sees: ['Kitchen board', 'Menu & availability'],
+  },
+  {
+    role: 'school',
+    title: 'VHS Coordinator',
+    Icon: GraduationCap,
+    blurb: 'The Vedic Heritage School register — enrolments, fees and waiting lists.',
+    sees: ['Classes & enrolment'],
   },
   {
     role: 'committee',

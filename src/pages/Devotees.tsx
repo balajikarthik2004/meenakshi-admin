@@ -1,24 +1,23 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Download, Users } from 'lucide-react'
-import type { /* MembershipTier, */ User } from '@/lib/data/types'
+import type { MembershipTier, User } from '@/lib/data/types'
 import { PageShell } from '@/components/layout/PageShell'
 import { DataTable, type Column } from '@/components/admin/DataTable'
-// Membership temporarily disabled
-// import { TierBadge } from '@/components/shared/badges'
+import { TierBadge } from '@/components/shared/badges'
 import { LoadingSkeleton } from '@/components/shared/states'
 import { Avatar } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Toolbar, ToolbarSelect } from '@/components/admin/Toolbar'
-import { getMyBookings, listDevotees, listDonations /*, listMemberships */ } from '@/lib/data/api'
-import { CITIES } from '@/lib/data/mock'
+import { getMyBookings, listDevotees, listDonations, listMemberships } from '@/lib/data/api'
+import { CITIES, TIERS } from '@/lib/data/mock'
 import { useAsync, useDebounced } from '@/lib/hooks'
 import { downloadCSV, fmtDate, money } from '@/lib/utils'
 
 interface Row {
   user: User
-  // Membership temporarily disabled
-  // tier?: MembershipTier
+  /** The active membership, if they hold one. Absent for a non-member. */
+  tier?: MembershipTier
   contributions: number
   activePujas: number
 }
@@ -33,15 +32,13 @@ const JOINED_RANGES = [
 export default function Devotees() {
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
-  // Membership temporarily disabled
-  // const [tier, setTier] = useState('')
+  const [tier, setTier] = useState('')
   const [city, setCity] = useState('')
   const [joined, setJoined] = useState('all')
   const debounced = useDebounced(search)
 
   const { data, loading } = useAsync(
-    // Membership temporarily disabled — listMemberships() dropped from the tuple.
-    async () => Promise.all([listDevotees(), listDonations()]),
+    async () => Promise.all([listDevotees(), listDonations(), listMemberships()]),
     [],
   )
 
@@ -58,11 +55,10 @@ export default function Devotees() {
 
   const rows = useMemo<Row[]>(() => {
     if (!data) return []
-    const [devotees, donations] = data
-    // Membership temporarily disabled
-    // const activeMembership = new Map(
-    //   memberships.filter((m) => m.status === 'active').map((m) => [m.userId, m.tier]),
-    // )
+    const [devotees, donations, memberships] = data
+    const activeMembership = new Map(
+      memberships.filter((m) => m.status === 'active').map((m) => [m.userId, m.tier]),
+    )
     const totals = new Map<string, number>()
     for (const d of donations) {
       if (!d.userId) continue
@@ -79,25 +75,20 @@ export default function Devotees() {
 
     const q = debounced.trim().toLowerCase()
 
-    return (
-      devotees
-        .filter((u) =>
-          q ? [u.name, u.email, u.phone].some((f) => f.toLowerCase().includes(q)) : true,
-        )
-        .filter((u) => (city ? u.city === city : true))
-        // Membership temporarily disabled
-        // .filter((u) => (tier ? activeMembership.get(u.id) === tier : true))
-        .filter((u) => (cutoff ? new Date(u.createdAt) >= cutoff : true))
-        .map((user) => ({
-          user,
-          // Membership temporarily disabled
-          // tier: activeMembership.get(user.id),
-          contributions: totals.get(user.id) ?? 0,
-          activePujas: bookingCounts?.get(user.id) ?? 0,
-        }))
-    )
-    // `tier` dropped from the deps along with the filter above.
-  }, [data, debounced, city, joined, bookingCounts])
+    return devotees
+      .filter((u) =>
+        q ? [u.name, u.email, u.phone].some((f) => f.toLowerCase().includes(q)) : true,
+      )
+      .filter((u) => (city ? u.city === city : true))
+      .filter((u) => (tier ? activeMembership.get(u.id) === tier : true))
+      .filter((u) => (cutoff ? new Date(u.createdAt) >= cutoff : true))
+      .map((user) => ({
+        user,
+        tier: activeMembership.get(user.id),
+        contributions: totals.get(user.id) ?? 0,
+        activePujas: bookingCounts?.get(user.id) ?? 0,
+      }))
+  }, [data, debounced, city, tier, joined, bookingCounts])
 
   const columns: Column<Row>[] = [
     {
@@ -121,13 +112,14 @@ export default function Devotees() {
       sortValue: (r) => r.user.city ?? '',
       cell: (r) => r.user.city ?? '—',
     },
-    // Membership temporarily disabled
-    // {
-    //   key: 'tier',
-    //   header: 'Tier',
-    //   sortValue: (r) => r.tier ?? 'zz',
-    //   cell: (r) => (r.tier ? <TierBadge tier={r.tier} /> : <span className="text-muted">—</span>),
-    // },
+    {
+      key: 'tier',
+      header: 'Membership',
+      // Non-members sort last rather than first: the column is scanned to find who
+      // holds one, and a screen of dashes above the answer is not that.
+      sortValue: (r) => r.tier ?? 'zz',
+      cell: (r) => (r.tier ? <TierBadge tier={r.tier} /> : <span className="text-muted">—</span>),
+    },
     {
       key: 'contributions',
       header: 'Contributions',
@@ -162,8 +154,7 @@ export default function Devotees() {
         Email: r.user.email,
         Phone: r.user.phone,
         City: r.user.city,
-        // Membership temporarily disabled
-        // Tier: r.tier ?? '',
+        Membership: r.tier ?? '',
         Contributions: r.contributions,
         ActivePujas: r.activePujas,
         Joined: fmtDate(r.user.createdAt, 'yyyy-MM-dd'),
@@ -175,26 +166,26 @@ export default function Devotees() {
       search={search}
       onSearch={setSearch}
       searchPlaceholder="Search name, phone or email"
-      // `tier` dropped from the active-filter count while membership is disabled.
-      activeCount={[city, joined !== 'all' ? joined : '', search].filter(Boolean).length}
+      activeCount={[tier, city, joined !== 'all' ? joined : '', search].filter(Boolean).length}
       onClear={() => {
         setSearch('')
-        // setTier('') // Membership temporarily disabled
+        setTier('')
         setCity('')
         setJoined('all')
       }}
     >
-      {/* Membership temporarily disabled */}
-      {/* <ToolbarSelect
+      <ToolbarSelect
         value={tier}
         onChange={(e) => setTier(e.target.value)}
-        aria-label="Filter by tier"
+        aria-label="Filter by membership"
       >
-        <option value="">All tiers</option>
-        <option value="silver">Silver</option>
-        <option value="gold">Gold</option>
-        <option value="platinum">Platinum</option>
-      </ToolbarSelect> */}
+        <option value="">All memberships</option>
+        {TIERS.map((t) => (
+          <option key={t.tier} value={t.tier}>
+            {t.label}
+          </option>
+        ))}
+      </ToolbarSelect>
       <ToolbarSelect
         value={city}
         onChange={(e) => setCity(e.target.value)}
@@ -245,8 +236,7 @@ export default function Devotees() {
           initialSort={{ key: 'contributions', dir: 'desc' }}
           empty={{
             title: 'No devotees match those filters',
-            // Membership temporarily disabled — copy no longer mentions the tier filter.
-            detail: 'Clear the search or widen the city filters.',
+            detail: 'Clear the search, or widen the membership and city filters.',
           }}
         />
       )}

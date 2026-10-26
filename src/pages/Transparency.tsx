@@ -1,19 +1,36 @@
 import { useState } from 'react'
-import { FileDown, Printer, Scale, Target, TrendingUp, Wallet } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import {
+  CalendarCheck2,
+  FileDown,
+  Printer,
+  Scale,
+  Target,
+  TrendingUp,
+  TriangleAlert,
+  Wallet,
+} from 'lucide-react'
 import { PageShell } from '@/components/layout/PageShell'
 import { PnLTable } from '@/components/admin/PnLTable'
 import { TargetBreakdown } from '@/components/admin/TargetBreakdown'
 import { PrintableAgmReport } from '@/components/admin/PrintableAgmReport'
 import { BreakEvenMeter } from '@/components/shared/BreakEvenMeter'
+import { ProjectMoneyFlow } from '@/components/shared/ProjectMoneyFlow'
 import { StatTile } from '@/components/shared/StatTile'
 import { LoadingSkeleton } from '@/components/shared/states'
 import { StatusPill } from '@/components/shared/badges'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
-import { Progress } from '@/components/ui/badge'
 import { Dialog } from '@/components/ui/overlay'
-import { getPujaPnL, getTransparencySnapshot, listEvents, listProjects } from '@/lib/data/api'
+import {
+  getPledgeStats,
+  getPujaPnL,
+  getTransparencySnapshot,
+  listEvents,
+  listProjects,
+} from '@/lib/data/api'
 import { useAsync } from '@/lib/hooks'
+import { summariseProjects } from '@/lib/project'
 import { fmtDate, money, pct } from '@/lib/utils'
 
 /**
@@ -25,7 +42,13 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
 
   const { data, loading } = useAsync(
     async () =>
-      Promise.all([getTransparencySnapshot(), getPujaPnL(), listEvents(), listProjects()]),
+      Promise.all([
+        getTransparencySnapshot(),
+        getPujaPnL(),
+        listEvents(),
+        listProjects(),
+        getPledgeStats(),
+      ]),
     [],
   )
 
@@ -37,7 +60,8 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
     )
   }
 
-  const [snapshot, pnl, events, projects] = data
+  const [snapshot, pnl, events, projects, pledges] = data
+  const projectTotals = summariseProjects(projects)
   const now = Date.now()
   const meterEvents = events
     .filter((e) => new Date(e.date).getTime() > now - 90 * 86400000)
@@ -103,6 +127,51 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
         </p>
       </Card>
 
+      {/* The pledge book, reported beside the position above and never inside it.
+          Money the temple has been promised is genuinely useful next to the break-even
+          figure — it is most of what next quarter looks like — and genuinely dangerous
+          added to it, because none of it has arrived and some of it never will. The
+          meter above therefore moves only when an instalment is actually recorded. */}
+      {pledges.outstanding > 0 ? (
+        <Card className="mt-4 p-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 className="font-serif text-lg text-ink">Pledged, not yet received</h2>
+            <Link
+              to="/donations/pledges"
+              className="text-sm font-medium text-brand-600 hover:underline"
+            >
+              Open the pledge register →
+            </Link>
+          </div>
+          <p className="mt-0.5 text-sm text-muted">
+            Commitments on the books. Deliberately excluded from collected YTD and from the
+            break-even meter above — a pledge counts the day its money arrives, not the day it is
+            promised.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <StatTile
+              label="Outstanding"
+              value={money(pledges.outstanding)}
+              sub={`${pledges.active} live pledges from ${pledges.donors} donors`}
+              Icon={CalendarCheck2}
+              tone="gold"
+            />
+            <StatTile
+              label="Due in the next 30 days"
+              value={money(pledges.dueSoon)}
+              sub="Expected in next month's post"
+            />
+            <StatTile
+              label="Overdue"
+              value={money(pledges.overdue)}
+              sub={`${pledges.overdueCount} payment${pledges.overdueCount === 1 ? '' : 's'} past its date`}
+              Icon={TriangleAlert}
+              tone={pledges.overdue > 0 ? 'brand' : 'default'}
+            />
+          </div>
+        </Card>
+      ) : null}
+
       {/* Where the target goes. The meter above says how much is left to raise; the first
           question anyone asks next is what the money is for, so it is answered immediately
           under it rather than at the bottom of the page. */}
@@ -155,29 +224,39 @@ export default function Transparency({ readOnly = false }: { readOnly?: boolean 
         </div>
       </section>
 
-      {/* Projects */}
+      {/* Capital projects.
+          The cards render through `ProjectMoneyFlow`, the same component the devotee
+          project page uses, so the board and the public are reading one computation
+          rather than two that happen to agree today. The funding and work bars are
+          kept apart for the same reason they are kept apart there: a project can be
+          fully funded and barely begun, and one averaged bar would hide it. */}
       <section className="mt-6">
-        <h2 className="mb-3 font-serif text-lg text-ink">Capital projects</h2>
+        <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-serif text-lg text-ink">Capital projects</h2>
+          <div className="flex flex-wrap items-baseline gap-x-4 text-sm text-muted">
+            <span>
+              {money(projectTotals.raised)} raised · {money(projectTotals.spent)} spent ·{' '}
+              <span className="font-medium text-ink">{money(projectTotals.balance)}</span> in hand
+            </span>
+            {readOnly ? null : (
+              <Link to="/projects" className="font-medium text-brand-600 hover:underline">
+                Manage projects →
+              </Link>
+            )}
+          </div>
+        </div>
         <div className="grid gap-4 lg:grid-cols-2">
           {projects.map((p) => (
             <Card key={p.id}>
               <CardHeader className="flex-row items-start justify-between">
                 <div className="min-w-0">
                   <CardTitle>{p.title}</CardTitle>
-                  <p className="mt-0.5 text-sm text-muted">
-                    {money(p.raisedAmount)} raised · {money(p.spentAmount)} spent ·{' '}
-                    {money(p.targetAmount)} target
-                  </p>
+                  <p className="mt-0.5 text-sm text-muted">{p.summary}</p>
                 </div>
                 <StatusPill status={p.status} />
               </CardHeader>
               <div className="px-5 pb-5">
-                <Progress
-                  value={p.progressPct}
-                  label={`${p.title} — ${p.progressPct}% complete`}
-                  tone={p.status === 'completed' ? 'leaf' : p.progressPct > 50 ? 'gold' : 'brand'}
-                />
-                <p className="mt-1.5 text-sm text-muted">{pct(p.progressPct)} complete</p>
+                <ProjectMoneyFlow project={p} />
                 <ul className="mt-3 space-y-1.5 border-t border-line pt-3">
                   {p.notes.map((n, i) => (
                     <li key={i} className="flex gap-2 text-sm leading-relaxed text-muted">

@@ -1,18 +1,28 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowUpRight, Download, Pause, Play, X } from 'lucide-react'
+import {
+  ArrowUpRight,
+  Download,
+  Pause,
+  Play,
+  Printer,
+  Receipt as ReceiptIcon,
+  X,
+} from 'lucide-react'
 import type { Booking, User } from '@/lib/data/types'
 import { PageShell } from '@/components/layout/PageShell'
 import { DataTable, type Column } from '@/components/admin/DataTable'
 import { StatusPill } from '@/components/shared/badges'
 import { LoadingSkeleton } from '@/components/shared/states'
+import { TransactionReceipt } from '@/components/shared/TransactionReceipt'
 import { Button } from '@/components/ui/button'
 import { Toolbar, ToolbarDate, ToolbarSelect } from '@/components/admin/Toolbar'
-import { MenuItem, Popover } from '@/components/ui/overlay'
+import { Dialog, MenuItem, Popover } from '@/components/ui/overlay'
 import { useToast } from '@/components/ui/toast'
 import { isRealisedBooking, listBookings, listDevotees, setBookingStatus } from '@/lib/data/api'
 import { PUJA_BY_ID, PUJA_CATALOG } from '@/lib/data/mock'
 import { useAsync } from '@/lib/hooks'
+import { downloadElementAsPdf } from '@/lib/pdf'
 import { downloadCSV, fmtDate, money, titleCase } from '@/lib/utils'
 
 interface Row {
@@ -27,6 +37,8 @@ export default function Bookings() {
   const [puja, setPuja] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
+  const [receiptRow, setReceiptRow] = useState<Row | null>(null)
+  const receiptRef = useRef<HTMLDivElement>(null)
 
   const { data, loading, refresh } = useAsync(
     async () => Promise.all([listBookings(), listDevotees()]),
@@ -177,6 +189,15 @@ export default function Bookings() {
                   <X className="size-4" />
                   Cancel booking
                 </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    close()
+                    setReceiptRow(r)
+                  }}
+                >
+                  <ReceiptIcon className="size-4" />
+                  Receipt
+                </MenuItem>
               </>
             )}
           </Popover>
@@ -277,6 +298,51 @@ export default function Bookings() {
           empty={{ title: 'No bookings match', detail: 'Widen the status, puja or date filters.' }}
         />
       )}
+
+      <Dialog
+        open={!!receiptRow}
+        onClose={() => setReceiptRow(null)}
+        title="Transaction receipt"
+        className="max-w-2xl"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => window.print()}>
+              <Printer />
+              Print
+            </Button>
+            <Button
+              onClick={() => {
+                if (!receiptRef.current || !receiptRow) return
+                downloadElementAsPdf(receiptRef.current, `receipt-${receiptRow.booking.id}.pdf`)
+              }}
+            >
+              <Download />
+              Download PDF
+            </Button>
+          </>
+        }
+      >
+        {receiptRow ? (
+          <TransactionReceipt
+            ref={receiptRef}
+            recipientName={receiptRow.devotee?.name ?? 'Devotee'}
+            recipientEmail={receiptRow.devotee?.email}
+            date={receiptRow.booking.createdAt}
+            receiptNo={receiptRow.booking.id.toUpperCase()}
+            lines={[
+              {
+                serviceName: `${PUJA_BY_ID.get(receiptRow.booking.pujaCatalogId)?.name ?? 'Puja'} sponsorship (${titleCase(receiptRow.booking.cadence)})`,
+                qty: 1,
+                amount: receiptRow.booking.amount,
+              },
+            ]}
+            paymentMode={titleCase(receiptRow.booking.payment?.method ?? 'card')}
+            referenceNumber={
+              receiptRow.booking.payment?.reference ?? receiptRow.booking.id.toUpperCase()
+            }
+          />
+        ) : null}
+      </Dialog>
     </PageShell>
   )
 }

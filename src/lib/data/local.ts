@@ -52,6 +52,44 @@ export const LOCAL_KEYS = {
    * `onHand` figure, so a reload cannot leave the ledger and the count disagreeing.
    */
   inventory: `${NS}:inventory`,
+  /**
+   * Pledges, and the instalments the accounts desk has settled.
+   *
+   * Recording a pledge payment mints a real donation, and the ledger it lands in is
+   * rebuilt on every reload. Without this, an instalment marked paid on Tuesday is
+   * due again on Wednesday — and the register's whole job is to be the record of what
+   * is still owed. Only the changeable fields are stored, replayed over the seed, the
+   * same shape `hydrateApprovals` uses.
+   */
+  pledges: `${NS}:pledges`,
+  /**
+   * Cafeteria orders this browser placed, and their progress.
+   *
+   * The seeded rail is rebuilt from the clock on each load, so it cannot hold a real
+   * order. A devotee standing at the counter with a token is the last person who
+   * should lose their record to a page refresh.
+   */
+  kitchen: `${NS}:kitchen`,
+  /**
+   * Class enrolments made here, and the office decisions taken on them.
+   *
+   * A family that registered for the school year will come back for this record;
+   * the seeded register cannot hold it, so created rows are stored whole.
+   */
+  school: `${NS}:school`,
+  /** Classes the coordinators have taken off the catalogue. */
+  schoolClasses: `${NS}:school-classes`,
+  /** Dishes the kitchen has marked sold out, which must survive the rest of service. */
+  kitchenMenu: `${NS}:kitchen-menu`,
+  /**
+   * Project progress, status and the expenses this console has booked.
+   *
+   * An expense recorded on a Tuesday has to still be there on Wednesday or the
+   * project's money-flow statement — the whole reason the page exists — resets to the
+   * seed every morning. Only changeable fields are stored; `spentAmount` deliberately
+   * is not, because it is recomputed from the lines on load so the two cannot drift.
+   */
+  projects: `${NS}:projects`,
 } as const
 
 export function readLocal<T>(key: string, fallback: T): T {

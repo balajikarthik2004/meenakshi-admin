@@ -1,20 +1,30 @@
-import { useMemo, useState } from 'react'
-import { Download, FileCheck2, Landmark, Wand2 } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import {
+  Download,
+  FileCheck2,
+  Landmark,
+  Printer,
+  Receipt as ReceiptIcon,
+  Wand2,
+} from 'lucide-react'
 import type { Donation, User } from '@/lib/data/types'
 import { PageShell } from '@/components/layout/PageShell'
 import { DataTable, type Column } from '@/components/admin/DataTable'
 import { StatTile } from '@/components/shared/StatTile'
 import { LoadingSkeleton } from '@/components/shared/states'
+import { TransactionReceipt } from '@/components/shared/TransactionReceipt'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox, Textarea } from '@/components/ui/input'
 import { Toolbar, ToolbarDate, ToolbarSelect } from '@/components/admin/Toolbar'
-import { Sheet } from '@/components/ui/overlay'
+import { Dialog, Sheet } from '@/components/ui/overlay'
 import { useToast } from '@/components/ui/toast'
 import { issueTaxReceipts, listDevotees, listDonations } from '@/lib/data/api'
 import { DONATION_CATEGORIES } from '@/lib/data/mock'
 import { useAsync } from '@/lib/hooks'
-import { EVENT_BY_ID } from '@/lib/data/mock'
+import { EVENT_BY_ID, PROJECT_BY_ID } from '@/lib/data/mock'
+import { Link } from 'react-router-dom'
+import { downloadElementAsPdf } from '@/lib/pdf'
 import { downloadCSV, fmtDate, money, titleCase } from '@/lib/utils'
 
 interface Row {
@@ -22,11 +32,16 @@ interface Row {
   donor?: User
 }
 
-/** The festival a gift sponsors, and which heads it covers — blank for a plain gift. */
+/**
+ * What a gift was earmarked for — the festival or the capital project, and for a
+ * festival which heads it covers. Blank for an unrestricted gift.
+ */
 function eventPurpose(d: Donation) {
   const event = d.eventId ? EVENT_BY_ID.get(d.eventId) : undefined
-  if (!event) return ''
-  return d.eventItems?.length ? `${event.title} — ${d.eventItems.join(', ')}` : event.title
+  if (event) {
+    return d.eventItems?.length ? `${event.title} — ${d.eventItems.join(', ')}` : event.title
+  }
+  return d.projectId ? (PROJECT_BY_ID.get(d.projectId)?.title ?? '') : ''
 }
 
 interface MatchResult {
@@ -55,6 +70,8 @@ export default function Donations() {
   const [reconciling, setReconciling] = useState(false)
   const [statement, setStatement] = useState(SAMPLE_STATEMENT)
   const [matches, setMatches] = useState<MatchResult[] | null>(null)
+  const [receiptRow, setReceiptRow] = useState<Row | null>(null)
+  const receiptRef = useRef<HTMLDivElement>(null)
 
   const { data, loading, refresh } = useAsync(
     async () => Promise.all([listDonations(), listDevotees()]),
@@ -178,6 +195,14 @@ export default function Donations() {
                 {titleCase(r.donation.recurringCadence ?? 'recurring')}
               </Badge>
             ) : null}
+            {/* Where the money came from changes how the row should be read: this one
+                settles a promise already on the register rather than arriving out of
+                nowhere, and the link is how the desk gets back to the rest of it. */}
+            {r.donation.pledgeId ? (
+              <Link to="/donations/pledges" onClick={(e) => e.stopPropagation()} className="ml-2">
+                <Badge variant="neutral">Pledge</Badge>
+              </Link>
+            ) : null}
           </span>
           {eventPurpose(r.donation) ? (
             <p className="max-w-[30ch] truncate text-sm text-muted">{eventPurpose(r.donation)}</p>
@@ -213,6 +238,18 @@ export default function Donations() {
       align: 'right',
       cell: (r) => <span className="font-medium tabular-nums">{money(r.donation.amount)}</span>,
     },
+    {
+      key: 'receipt-action',
+      header: '',
+      cell: (r) => (
+        <div onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="sm" onClick={() => setReceiptRow(r)}>
+            <ReceiptIcon />
+            Receipt
+          </Button>
+        </div>
+      ),
+    },
   ]
 
   const exportCSV = () =>
@@ -224,10 +261,12 @@ export default function Donations() {
         Donor: r.donor?.name ?? 'Anonymous',
         Fund: titleCase(r.donation.category),
         Festival: r.donation.eventId ? (EVENT_BY_ID.get(r.donation.eventId)?.title ?? '') : '',
+        Project: r.donation.projectId ? (PROJECT_BY_ID.get(r.donation.projectId)?.title ?? '') : '',
         Sponsored: r.donation.eventItems?.join('; ') ?? '',
         Amount: r.donation.amount,
         Method: r.donation.paymentMethod,
         Recurring: r.donation.isRecurring ? r.donation.recurringCadence : 'No',
+        Pledge: r.donation.pledgeId ?? '',
         Receipt: r.donation.taxReceiptId ?? '',
       })),
     )
@@ -412,6 +451,57 @@ export default function Donations() {
           </div>
         ) : null}
       </Sheet>
+
+      <Dialog
+        open={!!receiptRow}
+        onClose={() => setReceiptRow(null)}
+        title="Transaction receipt"
+        className="max-w-2xl"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => window.print()}>
+              <Printer />
+              Print
+            </Button>
+            <Button
+              onClick={() => {
+                if (!receiptRef.current || !receiptRow) return
+                downloadElementAsPdf(
+                  receiptRef.current,
+                  `receipt-${receiptRow.donation.taxReceiptId ?? receiptRow.donation.id}.pdf`,
+                )
+              }}
+            >
+              <Download />
+              Download PDF
+            </Button>
+          </>
+        }
+      >
+        {receiptRow ? (
+          <TransactionReceipt
+            ref={receiptRef}
+            recipientName={receiptRow.donor?.name ?? 'Devotee'}
+            recipientEmail={receiptRow.donor?.email}
+            date={receiptRow.donation.createdAt}
+            receiptNo={(receiptRow.donation.taxReceiptId ?? receiptRow.donation.id).toUpperCase()}
+            lines={[
+              {
+                serviceName:
+                  `${titleCase(receiptRow.donation.category)} donation` +
+                  (eventPurpose(receiptRow.donation)
+                    ? ` — ${eventPurpose(receiptRow.donation)}`
+                    : '') +
+                  (receiptRow.donation.dedicatedTo ? ` (${receiptRow.donation.dedicatedTo})` : ''),
+                qty: 1,
+                amount: receiptRow.donation.amount,
+              },
+            ]}
+            paymentMode={titleCase(receiptRow.donation.paymentMethod)}
+            referenceNumber={receiptRow.donation.id.toUpperCase()}
+          />
+        ) : null}
+      </Dialog>
     </PageShell>
   )
 }

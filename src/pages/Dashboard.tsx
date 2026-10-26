@@ -5,7 +5,6 @@ import {
   CalendarCheck,
   HandCoins,
   Package,
-  // ShieldCheck, // Membership temporarily disabled
   TrendingUp,
   UserPlus,
   Wallet,

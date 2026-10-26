@@ -1,5 +1,6 @@
 import type { Donation, DonationCategory } from '@/lib/data/types'
 import { BOOKINGS_REVENUE } from './bookings'
+import { PROJECT_IDS } from './projects'
 import { DEVOTEES } from './users'
 import type { Rand } from './seed'
 import { chance, dayInYear, id, int, iso, pick, rng, today } from './seed'
@@ -16,6 +17,7 @@ export const DONATION_CATEGORIES: { key: DonationCategory; label: string; blurb:
   { key: 'vedic-school', label: 'Vedic School', blurb: 'Weekend Sanskrit and chanting classes' },
   { key: 'building', label: 'Building Fund', blurb: 'Rajagopuram, halls and grounds' },
   { key: 'event', label: 'Event Sponsorship', blurb: 'Festival-specific sponsorship' },
+  { key: 'project', label: 'Capital Project', blurb: 'Build something that lasts' },
 ]
 
 const CATEGORY_KEYS = DONATION_CATEGORIES.map((c) => c.key)
@@ -57,10 +59,19 @@ function makeDonation(
   createdAt: Date,
 ): Donation {
   const isRecurring = !isMajor && chance(r, 22)
+  const category = isMajor ? 'building' : pick(r, CATEGORY_KEYS)
+
+  // A gift to the capital programme has to say which project, the same way an event
+  // gift says which festival. Chosen from the running index rather than from `r` on
+  // purpose: an extra draw here would shift every amount downstream of it, and the
+  // seed's whole contract is that a rebuild produces byte-identical data.
+  const projectId = category === 'project' ? PROJECT_IDS[n % PROJECT_IDS.length] : undefined
+
   return {
     id: id('don', n),
     userId,
-    category: isMajor ? 'building' : pick(r, CATEGORY_KEYS),
+    category,
+    projectId,
     amount: isMajor ? int(r, 12, 58) * 1000 : pick(r, SMALL_AMOUNTS),
     isRecurring,
     recurringCadence: isRecurring

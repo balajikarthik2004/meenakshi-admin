@@ -1,3 +1,5 @@
+import type { ProjectCoverKey } from '@/components/shared/ProjectCover'
+
 export type UUID = string
 export type ISODate = string
 export type Money = number // USD cents avoided at this stage; use whole dollars
@@ -18,7 +20,18 @@ export interface Temple {
   deities: string[]
 }
 
-export type Role = 'devotee' | 'admin' | 'board' | 'priest' | 'finance' | 'committee'
+export type Role =
+  | 'devotee'
+  | 'admin'
+  | 'board'
+  | 'priest'
+  | 'finance'
+  | 'committee'
+  // The cafeteria staff. Narrow on purpose: the kitchen board is a working surface
+  // by the pass, and this role reaches it and nothing else in the console.
+  | 'kitchen'
+  // The Vedic Heritage School coordinators, who run enrolment and the registers.
+  | 'school'
 
 export interface User {
   id: UUID
@@ -176,11 +189,30 @@ export type DonationCategory =
   | 'vedic-school'
   | 'building'
   | 'event'
+  | 'project'
   | 'other'
+
+/**
+ * Who a gift came from, captured directly rather than through an account.
+ *
+ * A signed-in devotee is identified by `Donation.userId`. A visitor who gives or
+ * pledges from the public site has no account to point at, so their own details ride
+ * along on the record — which is what lets this console name them instead of printing
+ * "Anonymous" over somebody who told the temple exactly who they were. Mirrors the
+ * same interface in `meenakshi-devotee`.
+ */
+export interface DonorContact {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+}
 
 export interface Donation {
   id: UUID
   userId: UUID | null // null for anonymous
+  /** Set when `userId` is null and the giver identified themselves at the gate. */
+  donor?: DonorContact
   category: DonationCategory
   amount: Money
   isRecurring: boolean
@@ -189,13 +221,347 @@ export interface Donation {
   dedicatedTo?: string
   /** Set when `category` is `event` — the festival this gift sponsors. */
   eventId?: UUID
+  /** Set when `category` is `project` — the capital project this gift builds. */
+  projectId?: UUID
   /** Labels of the sponsorship items chosen, in the order they are offered. */
   eventItems?: string[]
+  /** Set when this gift settled a pledge instalment — see `Pledge`. */
+  pledgeId?: UUID
   taxReceiptId?: UUID
   createdAt: ISODate
 }
 
-export type MembershipTier = 'silver' | 'gold' | 'platinum'
+/* ------------------------------------------------------------------ pledges */
+
+/** The intervals a pledge may repeat on. Daily and weekly are deliberately absent —
+ *  a promise the temple has to chase 52 times a year is an invoice, not a pledge. */
+export type PledgeCadence = Extract<Cadence, 'one-time' | 'monthly' | 'quarterly' | 'yearly'>
+
+/**
+ * Where a promise has got to.
+ *
+ * `lapsed` is reserved for a pledge whose every due date has gone by with nothing
+ * paid. A pledge that is part-paid stays `partially-fulfilled` however late the rest
+ * runs — writing it off is a decision somebody makes, not one a date makes for them.
+ */
+export type PledgeStatus =
+  'scheduled' | 'partially-fulfilled' | 'fulfilled' | 'lapsed' | 'cancelled'
+
+/** One dated promise inside a pledge. A monthly pledge over a year holds twelve. */
+export interface PledgeInstallment {
+  /** `pld_0007-3` — stable across reloads, which a chase list needs it to be. */
+  id: UUID
+  dueDate: ISODate
+  amount: Money
+  status: 'due' | 'paid' | 'skipped'
+  /** The `Donation.id` that settled it. Present only when `status` is `paid`. */
+  donationId?: UUID
+  paidAt?: ISODate
+}
+
+/**
+ * A promise to give, on a date that has not arrived yet.
+ *
+ * Deliberately its own record rather than a flag on `Donation`, for the same reason
+ * `ApprovalStage` is kept apart from `Booking.status`: a pledge is *intent*, and a
+ * `Donation` is what actually happened. Keeping them apart is what protects every
+ * money figure in both apps — a pledge is not income, is not in the YTD total the
+ * transparency strip publishes, does not move a festival's break-even meter, and
+ * carries no tax receipt, because under 501(c)(3) rules a promise is deductible only
+ * once it is paid.
+ *
+ * Money enters the ledger at exactly one point: `settlePledgeInstallment`, which
+ * creates a real `Donation` carrying `pledgeId` back to the promise it settled.
+ */
+export interface Pledge {
+  id: UUID
+  userId: UUID | null // null when pledged by a guest — see `donor`
+  /** Set when `userId` is null: the guest's details, taken at the donation gate. */
+  donor?: DonorContact
+  category: DonationCategory
+  /** Set when `category` is `project` — the capital project being promised to. */
+  projectId?: UUID
+  /** Per instalment, not the total. The total is `amount × installments.length`. */
+  amount: Money
+  cadence: PledgeCadence
+  /** When the first instalment falls due. Always in the future at creation. */
+  startDate: ISODate
+  installments: PledgeInstallment[]
+  dedicatedTo?: string
+  /** How the devotee *intends* to pay. Nothing is charged until an instalment settles. */
+  intendedMethod: Donation['paymentMethod']
+  /** A line the devotee left for the office — "after the house sale closes". */
+  note?: string
+  status: PledgeStatus
+  createdAt: ISODate
+  cancelledAt?: ISODate
+}
+
+/**
+ * Two memberships: the standard one, and the concessional rate for devotees aged 65
+ * and over. Not a ladder — the benefits are the same and only the price differs, so
+ * these are two prices for one membership rather than three tiers of access.
+ * Eligibility for `senior` is decided in `@/lib/membership`, never inline.
+ */
+/* ------------------------------------------------------------------ kitchen */
+
+/** The three services the temple kitchen runs. An item belongs to one or more. */
+export type MealWindow = 'breakfast' | 'lunch' | 'evening'
+
+/** The groupings the Devasthanam publishes its menu under. */
+export type MenuCategory =
+  | 'breakfast'
+  | 'dosa'
+  | 'snacks'
+  | 'rice'
+  | 'beverages'
+  /** Weekend-only cooking, and the savouries sold off the shelf. */
+  | 'weekend'
+
+/**
+ * One dish on the cafeteria board.
+ *
+ * Everything the temple kitchen cooks is vegetarian, so there is no flag for it —
+ * a tick against every single row tells a devotee nothing. What does vary, and
+ * therefore is recorded: whether a dish is cooked without onion and garlic, whether
+ * it carries nuts, and which services it is actually cooked for. Idli at eight in the
+ * evening is not something this kitchen makes, and offering it would produce an order
+ * the counter has to ring back and cancel.
+ */
+export interface MenuItem {
+  id: UUID
+  name: string
+  /** The name called out at the counter, where it differs. */
+  tamilName?: string
+  description: string
+  category: MenuCategory
+  price: Money
+  /**
+   * A photograph of the dish. Absent where no honest one exists — the card falls
+   * back to a typographic tile rather than borrowing a picture of something else.
+   */
+  image?: string
+  /** Minutes at the pass for one portion — what the ready-by estimate is built from. */
+  prepMinutes: number
+  /** Which services it is cooked for. */
+  servedAt: MealWindow[]
+  /** Weekday numbers it is cooked on, 0 = Sunday. Absent means every open day. */
+  servedOn?: number[]
+  /** Off the board today — sold out, or the cook is away. */
+  available: boolean
+  /** No onion, no garlic. */
+  noOnionGarlic?: boolean
+  containsNuts?: boolean
+  spicy?: boolean
+  popular?: boolean
+}
+
+/**
+ * One service on one weekday.
+ *
+ * Online ordering closes `lastOrderMinutesBefore` ahead of the shutters, because an
+ * order placed four minutes before the kitchen closes is an order nobody cooks. The
+ * cut-off is data rather than a constant so the long weekend lunch and the short
+ * weekday one can differ.
+ */
+export interface KitchenWindow {
+  /** 0 = Sunday. */
+  day: number
+  meal: MealWindow
+  /** `HH:mm`, local temple time. */
+  opens: string
+  closes: string
+  lastOrderMinutesBefore: number
+}
+
+/**
+ * Where an order has got to.
+ *
+ * `placed` is the state that matters: it means the ticket is on the rail and nobody
+ * in the kitchen has picked it up yet. The board makes that one loud on purpose.
+ */
+export type OrderStatus = 'placed' | 'preparing' | 'ready' | 'collected' | 'cancelled'
+
+/**
+ * A line on a ticket.
+ *
+ * `name` and `unitPrice` are copied rather than looked up, because the menu is edited
+ * and a dish that is renamed or repriced next month must not silently rewrite what
+ * somebody ordered and paid for last week.
+ */
+export interface OrderLine {
+  itemId: UUID
+  name: string
+  qty: number
+  unitPrice: Money
+}
+
+export interface KitchenOrder {
+  id: UUID
+  /**
+   * The short token called out at the counter — "B-14".
+   * Deliberately not the id: nobody reads `ord_0007` across a serving hatch.
+   */
+  token: string
+  userId: UUID | null
+  /** Set when `userId` is null — a guest ordering from the public site. */
+  donor?: DonorContact
+  /** Who to call out for, and the number the counter rings if something is wrong. */
+  contactName: string
+  contactPhone: string
+  meal: MealWindow
+  lines: OrderLine[]
+  subtotal: Money
+  /** Optional top-up to the annadanam fund, taken with the order. */
+  donationAmount: Money
+  total: Money
+  status: OrderStatus
+  paymentMethod: 'card' | 'cash-at-counter'
+  /** Minutes the kitchen quoted at the moment it accepted the ticket. */
+  promisedMinutes: number
+  /** "Less spicy", "no coriander" — read at the pass. */
+  note?: string
+  placedAt: ISODate
+  acceptedAt?: ISODate
+  readyAt?: ISODate
+  collectedAt?: ISODate
+  cancelledAt?: ISODate
+  /** Why the kitchen could not cook it. Shown to the devotee, so it must be a reason. */
+  cancelReason?: string
+}
+
+/* ------------------------------------------------------------------- school */
+
+/**
+ * The Vedic Heritage School's class groupings.
+ *
+ * `purna-vidya` is the spine of the Hindu WISDOM Program — nine progressive levels
+ * for ages five to sixteen — and the rest are the classes that run alongside it on
+ * the same Sunday morning.
+ */
+export type ClassCategory =
+  | 'purna-vidya'
+  | 'language'
+  | 'music'
+  | 'wellbeing'
+  | 'enrichment'
+  | 'parents'
+
+/** Who a class is for. `family` means a parent and child attend together. */
+export type ClassAudience = 'child' | 'youth' | 'adult' | 'family'
+
+/**
+ * An academic year.
+ *
+ * Enrolment is gated on the registration window rather than on the teaching dates:
+ * the school takes bookings for months before the first Sunday, and stops taking
+ * them once the year is under way and the books have been ordered.
+ */
+export interface SchoolTerm {
+  id: UUID
+  name: string
+  /** First and last teaching day. */
+  startDate: ISODate
+  endDate: ISODate
+  registrationOpens: ISODate
+  registrationCloses: ISODate
+  /** How often classes meet, as the school publishes it. */
+  cadence: string
+  status: 'upcoming' | 'open' | 'in-progress' | 'closed'
+}
+
+/**
+ * One class a devotee can enrol a student in.
+ *
+ * `enrolled` is a count held on the class rather than derived from the enrolment
+ * list, for the same reason a festival carries `collectedAmount`: the seats taken
+ * include years of paper registrations that predate this app, and a number derived
+ * only from rows in here would tell a parent a full class had places.
+ */
+export interface SchoolClass {
+  id: UUID
+  slug: string
+  /** Short code the school uses on its own registers — "PV-3", "TAM-1". */
+  code: string
+  name: string
+  category: ClassCategory
+  summary: string
+  description: string
+  /** Youngest age admitted, in years on the first teaching day. */
+  minAge: number
+  /** Oldest age admitted. Absent means no upper limit. */
+  maxAge?: number
+  audience: ClassAudience
+  /** 0 = Sunday. The whole school runs on Sunday mornings. */
+  day: number
+  /** `HH:mm`, local temple time. */
+  startTime: string
+  endTime: string
+  room: string
+  teacher: string
+  /** For the whole academic year, not per session. */
+  fee: Money
+  capacity: number
+  /** Seats already taken, including registrations made off this app. */
+  enrolled: number
+  /**
+   * The class a student is normally expected to have finished first.
+   *
+   * Advisory, not enforced. The Purna Vidya levels are progressive, but a family
+   * joining midway is placed by the coordinator after an assessment — so the app
+   * says what the expectation is and lets the coordinator decide, rather than
+   * refusing a booking it is not qualified to refuse.
+   */
+  prerequisiteClassId?: UUID
+  notes: string[]
+  image?: string
+  active: boolean
+}
+
+/**
+ * Where an enrolment has got to.
+ *
+ * `pending-payment` is the state the school actually operates: its own instructions
+ * are to pay first and register second, so a registration that has not been paid for
+ * is a real and common thing rather than an error. `waitlisted` exists because a full
+ * class should take a name, not turn a family away.
+ */
+export type EnrolmentStatus =
+  | 'pending-payment'
+  | 'enrolled'
+  | 'waitlisted'
+  | 'withdrawn'
+  | 'completed'
+
+export interface ClassEnrolment {
+  id: UUID
+  termId: UUID
+  classId: UUID
+  /** The account that booked — the parent, where the student is a child. */
+  userId: UUID | null
+  /** Set when `userId` is null: a guest who booked from the public site. */
+  donor?: DonorContact
+  /** Who actually attends. Deliberately not the account holder's name. */
+  studentName: string
+  /** Age on the first teaching day, which is what admission is judged on. */
+  studentAge: number
+  guardianName: string
+  guardianPhone: string
+  guardianEmail: string
+  status: EnrolmentStatus
+  /** What was quoted at the time. Copied, so a later fee change cannot rewrite it. */
+  fee: Money
+  paymentMethod: 'card' | 'check' | 'zelle' | 'cash'
+  paidAt?: ISODate
+  /** Where they sit on the waiting list. Set only while `waitlisted`. */
+  waitlistPosition?: number
+  /** Anything the family told the school — an allergy, a sibling to seat with. */
+  notes?: string
+  createdAt: ISODate
+  withdrawnAt?: ISODate
+}
+
+export type MembershipTier = 'normal' | 'senior'
 export interface Membership {
   id: UUID
   userId: UUID
@@ -252,15 +618,66 @@ export interface FacilityBooking {
   status: 'pending' | 'confirmed' | 'cancelled'
 }
 
+/**
+ * One payment made out of a project's fund.
+ *
+ * `Project.spentAmount` used to be a bare number with nothing behind it, which made
+ * "where did the money go" a question the app could state but not answer. Expenses are
+ * stored as the lines that add up to it — the same shape the store keeps for stock,
+ * where movements and the balance they arrive at are held together so a reload cannot
+ * leave the ledger and the count disagreeing. The seed asserts the two still agree.
+ */
+export interface ProjectExpense {
+  id: UUID
+  date: ISODate
+  /** Who was paid. Named, because an unattributed outflow is not transparency. */
+  vendor: string
+  description: string
+  amount: Money
+  /** Invoice number or board minute the payment was authorised against. */
+  reference?: string
+}
+
+/**
+ * A capital project: something the temple is building, and the money for it.
+ *
+ * Two different percentages live on this record and they are deliberately not the same
+ * number. `progressPct` is how much of the *work* is done; funding progress is derived
+ * from `raisedAmount` against `targetAmount`. A project can be fully funded and barely
+ * started, or half-funded and nearly finished because the board bridged it — and a
+ * single bar that quietly averaged the two would hide exactly the situation a devotee
+ * deciding where to give most needs to see.
+ */
 export interface Project {
   id: UUID
+  /** URL-safe name — `/projects/:slug` on the devotee site. */
+  slug: string
   title: string
+  /** One line on a card: what this actually buys. */
+  summary: string
+  /** The paragraph on the detail page. */
+  description: string
   targetAmount: Money
   raisedAmount: Money
+  /** Always equal to the sum of `expenses`; the seed asserts it. */
   spentAmount: Money
+  /** Physical work completed, 0–100. Not the funding figure — see the doc above. */
   progressPct: number
   status: 'planned' | 'in-progress' | 'completed'
+  /** Whether the project is currently accepting gifts. */
+  openForDonations: boolean
+  startedAt?: ISODate
+  targetCompletion?: ISODate
+  /**
+   * Which drawn elevation heads the page. Not a deity key: three of these projects
+   * have nothing to photograph yet and a deity portrait over a solar array is the
+   * wrong picture, however pretty. See `ProjectCover`.
+   */
+  cover: ProjectCoverKey
+  /** A photograph of the finished work, once there is one. Wins over `cover`. */
+  imageUrl?: string
   notes: string[]
+  expenses: ProjectExpense[]
 }
 
 /**
@@ -483,14 +900,7 @@ export interface StaffingRow {
 export type StockUnit = 'pc' | 'kg' | 'g' | 'l' | 'ml' | 'bunch' | 'packet' | 'metre'
 
 export type StockCategory =
-  | 'flowers'
-  | 'fruits'
-  | 'dairy'
-  | 'grains'
-  | 'dravyam'
-  | 'cloth'
-  | 'lamp'
-  | 'other'
+  'flowers' | 'fruits' | 'dairy' | 'grains' | 'dravyam' | 'cloth' | 'lamp' | 'other'
 
 export interface StockItem {
   id: UUID

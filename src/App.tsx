@@ -26,8 +26,12 @@ const CommitteeApprovals = lazy(() => import('@/pages/CommitteeApprovals'))
 const Catalog = lazy(() => import('@/pages/Catalog'))
 const Donations = lazy(() => import('@/pages/Donations'))
 const Receipts = lazy(() => import('@/pages/Receipts'))
-// Membership temporarily disabled
-// const Memberships = lazy(() => import('@/pages/Memberships'))
+const Pledges = lazy(() => import('@/pages/Pledges'))
+const Projects = lazy(() => import('@/pages/Projects'))
+const KitchenBoard = lazy(() => import('@/pages/KitchenBoard'))
+const KitchenMenu = lazy(() => import('@/pages/KitchenMenu'))
+const SchoolAdmin = lazy(() => import('@/pages/SchoolAdmin'))
+const Memberships = lazy(() => import('@/pages/Memberships'))
 const Volunteers = lazy(() => import('@/pages/Volunteers'))
 const Campaigns = lazy(() => import('@/pages/Campaigns'))
 const CampaignEditor = lazy(() => import('@/pages/CampaignEditor'))
@@ -129,15 +133,32 @@ export default function App() {
                 </Route>
                 {/* Read-only for the accounts desk, which reaches it from its own queue. */}
                 <Route
-                  element={<RequireRole roles={['admin', 'priest', 'finance']} fallback="/bookings" />}
+                  element={
+                    <RequireRole roles={['admin', 'priest', 'finance']} fallback="/bookings" />
+                  }
                 >
                   <Route path="/requirements/:id" element={<RequirementEditor />} />
                 </Route>
 
                 <Route path="/donations" element={<Donations />} />
                 <Route path="/donations/receipts" element={<Receipts />} />
-                {/* Membership temporarily disabled */}
-                {/* <Route path="/memberships" element={<Memberships />} /> */}
+                <Route path="/donations/pledges" element={<Pledges />} />
+                <Route path="/projects" element={<Projects />} />
+
+                {/* The cafeteria. Open to the kitchen staff and the administrator —
+                    the board is a working surface by the pass, not an oversight
+                    screen, so the accounts desk and the board are not given it. */}
+                <Route element={<RequireRole roles={['admin', 'kitchen']} fallback="/dashboard" />}>
+                  <Route path="/kitchen" element={<KitchenBoard />} />
+                  <Route path="/kitchen/menu" element={<KitchenMenu />} />
+                </Route>
+
+                {/* The school register belongs to its coordinators, with the
+                    administrator holding a key as everywhere else. */}
+                <Route element={<RequireRole roles={['admin', 'school']} fallback="/dashboard" />}>
+                  <Route path="/school" element={<SchoolAdmin />} />
+                </Route>
+                <Route path="/memberships" element={<Memberships />} />
 
                 <Route path="/events" element={<Events />} />
                 <Route path="/events/new" element={<EventEditor mode="create" />} />

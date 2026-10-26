@@ -152,7 +152,10 @@ function buildUsers(): User[] {
       country: 'US',
       nakshatra: pick(r, NAKSHATRAS),
       gothra: pick(r, GOTHRAS),
-      dob: new Date(int(r, 1958, 1996), int(r, 0, 11), int(r, 1, 28)).toISOString(),
+      // Widened past retirement age on purpose: the senior membership is gated on
+      // being 65 or over, and a roll where nobody qualifies makes the concession —
+      // and every eligibility check built on it — impossible to see working.
+      dob: new Date(int(r, 1944, 1996), int(r, 0, 11), int(r, 1, 28)).toISOString(),
       familyTreeId: chance(r, 62) ? id('fam', i + 1) : undefined,
       createdAt: new Date(int(r, 2014, 2025), int(r, 0, 11), int(r, 1, 28)).toISOString(),
       avatarInitials: initialsOf(name),
@@ -208,39 +211,66 @@ function buildUsers(): User[] {
       createdAt: new Date(2011, 5, 20).toISOString(),
       avatarInitials: 'RI',
     },
-    // The two approval desks. `signIn('', role)` resolves a role to the first seeded user
-    // holding it, so the finance and committee queues need a face to sign in as.
+    /* The three desks that had a sign-in card and no account behind it.
+       `resolveUser` falls back to the first devotee when no user holds the role
+       asked for, so picking Accounts, Puja Committee or Cafeteria Kitchen signed
+       you in as a devotee and the route guard bounced you to the dashboard — the
+       card worked, and the desk it advertised was unreachable. */
     {
       id: 'usr_finance',
       role: 'finance',
-      name: 'Anitha Rajagopal',
+      name: 'Lakshmi Narayanan',
       email: 'accounts@smdpearland.org',
-      phone: '(281) 489-0362',
+      phone: '(281) 489-0365',
       address: '17130 McLean Road',
       city: 'Pearland',
       state: 'TX',
       zip: '77584',
       country: 'US',
-      nakshatra: 'Chitra',
-      gothra: 'Atri',
-      createdAt: new Date(2017, 0, 9).toISOString(),
-      avatarInitials: 'AR',
+      createdAt: new Date(2018, 1, 5).toISOString(),
+      avatarInitials: 'LN',
     },
     {
       id: 'usr_committee',
       role: 'committee',
-      name: 'Krishnan Venkataraman',
+      name: 'Anand Krishnamurthy',
       email: 'pujacommittee@smdpearland.org',
-      phone: '(281) 489-0363',
+      phone: '(281) 489-0366',
       address: '17130 McLean Road',
       city: 'Pearland',
       state: 'TX',
       zip: '77584',
       country: 'US',
-      nakshatra: 'Moola',
-      gothra: 'Vashishta',
-      createdAt: new Date(2014, 10, 3).toISOString(),
-      avatarInitials: 'KV',
+      createdAt: new Date(2015, 10, 11).toISOString(),
+      avatarInitials: 'AK',
+    },
+    {
+      id: 'usr_kitchen',
+      role: 'kitchen',
+      name: 'Saroja Devi',
+      email: 'cafeteria@smdpearland.org',
+      phone: '(281) 489-0367',
+      address: '17130 McLean Road',
+      city: 'Pearland',
+      state: 'TX',
+      zip: '77584',
+      country: 'US',
+      createdAt: new Date(2019, 6, 22).toISOString(),
+      avatarInitials: 'SD',
+    },
+    {
+      id: 'usr_school',
+      role: 'school',
+      name: 'Vidya Madabushi',
+      email: 'hwp.vhs@smdpearland.org',
+      phone: '(281) 489-0368',
+      address: '17130 McLean Road',
+      city: 'Pearland',
+      state: 'TX',
+      zip: '77584',
+      country: 'US',
+      createdAt: new Date(2014, 7, 17).toISOString(),
+      avatarInitials: 'VM',
     },
   )
 

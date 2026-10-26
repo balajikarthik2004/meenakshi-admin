@@ -1,0 +1,37 @@
+# Build output and dependencies — large, generated, never worth reading for context.
+node_modules/
+dist/
+dist-ssr/
+node_modules/.tmp/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Env / local overrides — may hold secrets, and are machine-specific anyway.
+.env
+.env.*
+*.local
+
+# Editor / OS cruft
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Binary/media assets — not source, and large enough to waste context for no benefit.
+public/deities/*.mp4
+public/deities/*.png
+public/deities/*.jpg
+public/deities/*.jpeg
+public/deities/*.webp

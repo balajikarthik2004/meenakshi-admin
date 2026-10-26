@@ -1,13 +1,18 @@
 import {
   BadgeCheck,
   BadgeDollarSign,
+  CalendarCheck2,
   BookOpen,
   Boxes,
   ClipboardCheck,
   ClipboardList,
   CalendarCheck,
   CalendarDays,
+  ChefHat,
   Gauge,
+  GraduationCap,
+  HardHat,
+  Heart,
   HeartHandshake,
   Landmark,
   LayoutDashboard,
@@ -19,6 +24,7 @@ import {
   Wallet,
   UserCheck,
   Users,
+  UtensilsCrossed,
 } from 'lucide-react'
 import type { Role } from '@/lib/data/types'
 
@@ -47,9 +53,13 @@ export interface NavItem {
 }
 
 /* Shorthands, so a row reads as a sentence rather than a wall of unions. */
-const ALL_STAFF: Role[] = ['admin', 'board', 'priest', 'finance', 'committee']
+const ALL_STAFF: Role[] = ['admin', 'board', 'priest', 'finance', 'committee', 'kitchen']
 const OPS: Role[] = ['admin', 'priest', 'committee']
 const MONEY: Role[] = ['admin', 'board', 'finance']
+// The pass and the counter. Deliberately narrow: this is a working surface.
+const KITCHEN: Role[] = ['admin', 'kitchen']
+// The Vedic Heritage School coordinators.
+const SCHOOL: Role[] = ['admin', 'school']
 
 export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
@@ -104,6 +114,10 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
         Icon: Megaphone,
         roles: ['admin', 'committee'],
       },
+      // Memberships sit with People rather than Money: the register is mostly used to
+      // check who is a member and chase a renewal, and the dues it collects are a
+      // minor line beside donations. The board reads it for AGM voting rolls.
+      { to: '/memberships', label: 'Memberships', Icon: Heart, roles: ['admin', 'board'] },
     ],
   },
   {
@@ -144,16 +158,47 @@ export const NAV_GROUPS: { title: string; items: NavItem[] }[] = [
   {
     title: 'Money',
     items: [
-      { to: '/donations', label: 'Donation ledger', Icon: BadgeDollarSign, end: true, roles: MONEY },
+      {
+        to: '/donations',
+        label: 'Donation ledger',
+        Icon: BadgeDollarSign,
+        end: true,
+        roles: MONEY,
+      },
       {
         to: '/donations/receipts',
         label: 'Tax receipts',
         Icon: ReceiptText,
         roles: ['admin', 'finance'],
       },
+      // Promised money that has not arrived. It sits next to the ledger because the
+      // question is a finance one — what is still owed and what is late — and it is
+      // shown to the board too, since an outstanding pledge book is part of what the
+      // AGM is told about next year's position.
+      { to: '/donations/pledges', label: 'Pledge register', Icon: CalendarCheck2, roles: MONEY },
+      // The capital programme. Money, not Programme: what the desk does here is book
+      // expenditure against a restricted fund, and the board reads it at the AGM.
+      { to: '/projects', label: 'Capital projects', Icon: HardHat, roles: MONEY },
       { to: '/transparency', label: 'Transparency', Icon: Gauge, roles: MONEY },
       // Deliberately not the administrator: the AGM view is the board's own record.
       { to: '/board', label: 'Board view', Icon: ShieldCheck, roles: ['board'] },
+    ],
+  },
+  {
+    // The cafeteria runs on its own clock and is staffed by its own people, so it
+    // gets its own group rather than being filed under Operations with the pujas.
+    title: 'Cafeteria',
+    items: [
+      { to: '/kitchen', label: 'Kitchen board', Icon: ChefHat, end: true, roles: KITCHEN },
+      { to: '/kitchen/menu', label: 'Menu & availability', Icon: UtensilsCrossed, roles: KITCHEN },
+    ],
+  },
+  {
+    // The Vedic Heritage School. Its own group: the coordinators are volunteers who
+    // open the console for this and nothing else, twice a term.
+    title: 'School',
+    items: [
+      { to: '/school', label: 'Classes & enrolment', Icon: GraduationCap, roles: SCHOOL },
     ],
   },
   {
@@ -193,6 +238,8 @@ export const ROLE_HOME: Record<Role, string> = {
   finance: '/approvals/finance',
   committee: '/approvals/committee',
   priest: '/bookings/today',
+  kitchen: '/kitchen',
+  school: '/school',
   // A devotee has no business in the operations console at all.
   devotee: '/signin',
 }
@@ -205,6 +252,8 @@ const ROUTE_ALIASES: { prefix: string; inherits: string }[] = [
   { prefix: '/devotees/', inherits: '/devotees' },
   { prefix: '/events/', inherits: '/events' },
   { prefix: '/donations/receipts', inherits: '/donations/receipts' },
+  { prefix: '/donations/pledges', inherits: '/donations/pledges' },
+  { prefix: '/kitchen/menu', inherits: '/kitchen/menu' },
 ]
 
 const ALL_ITEMS = NAV_GROUPS.flatMap((g) => g.items)

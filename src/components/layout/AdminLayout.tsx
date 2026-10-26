@@ -8,6 +8,7 @@ import { Avatar } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { TEMPLE } from '@/lib/data/mock'
 import { useAuthStore } from '@/lib/store/auth'
+import { getKitchenStats } from '@/lib/data/api'
 import { cn } from '@/lib/utils'
 
 /* The nav table, the route guard and the sign-in cards all read `@/lib/nav`, so a page's
@@ -35,7 +36,13 @@ export function RequireBoard() {
  * two desks that are not always staffed, so an approval must never be unreachable. Who
  * actually pressed the button is still recorded on the booking either way.
  */
-export function RequireRole({ roles, fallback = '/dashboard' }: { roles: Role[]; fallback?: string }) {
+export function RequireRole({
+  roles,
+  fallback = '/dashboard',
+}: {
+  roles: Role[]
+  fallback?: string
+}) {
   const user = useAuthStore((s) => s.user)
   if (!user || !roles.includes(user.role)) return <Navigate to={fallback} replace />
   return <Outlet />
@@ -48,6 +55,37 @@ const ROLE_LABEL: Record<Role, string> = {
   devotee: 'Devotee',
   finance: 'Accounts & finance',
   committee: 'Puja committee',
+  kitchen: 'Cafeteria kitchen',
+  school: 'Vedic Heritage School',
+}
+
+/**
+ * How many cafeteria tickets nobody has started.
+ *
+ * Polled rather than pushed, because there is no socket here — ten seconds is fast
+ * enough that a cook glancing at the rail sees it, and slow enough to be invisible.
+ * Only fetched for the roles that can act on it; everybody else pays nothing.
+ */
+function useNewTicketCount(role: Role) {
+  const [count, setCount] = useState(0)
+  const watching = role === 'admin' || role === 'kitchen'
+
+  useEffect(() => {
+    if (!watching) return
+    let live = true
+    const read = async () => {
+      const stats = await getKitchenStats()
+      if (live) setCount(stats.newTickets)
+    }
+    read()
+    const t = setInterval(read, 10_000)
+    return () => {
+      live = false
+      clearInterval(t)
+    }
+  }, [watching])
+
+  return watching ? count : 0
 }
 
 export function AdminLayout() {
@@ -79,6 +117,8 @@ export function AdminLayout() {
         ? 'bg-gradient-to-r from-white to-white/60 text-brand-700 shadow-[var(--shadow-sm)] ring-1 ring-saffron-400/20'
         : 'text-ink-soft hover:translate-x-0.5 hover:bg-white/40 hover:text-brand-900',
     )
+
+  const newTickets = useNewTicketCount(user.role)
 
   const nav = (
     <nav className="flex flex-col gap-3">
@@ -114,6 +154,14 @@ export function AdminLayout() {
                         )}
                       />
                       <span className="truncate">{label}</span>
+                      {/* A live count, on the one nav row that has work queueing
+                          behind it. Someone three screens away in the devotee
+                          records has no other way of knowing a ticket landed. */}
+                      {to === '/kitchen' && newTickets > 0 ? (
+                        <span className="ml-auto grid min-w-5 shrink-0 place-items-center rounded-full bg-brand-500 px-1.5 text-[11px] font-bold tabular-nums text-white">
+                          {newTickets}
+                        </span>
+                      ) : null}
                     </>
                   )}
                 </NavLink>

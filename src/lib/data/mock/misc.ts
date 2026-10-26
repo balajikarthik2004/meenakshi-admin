@@ -6,15 +6,17 @@ import type {
   TargetAllocation,
   TransparencySnapshot,
 } from '@/lib/data/types'
+import { PROJECTS_RAISED, PROJECTS_SPENT } from './projects'
 import { addDays, id, int, iso, pick, rng, today } from './seed'
 import { DEVOTEES } from './users'
 
 /**
  * The board-approved budget, broken out by head. Two figures are deliberately not
- * invented: construction carries the exact raised and spent totals of `PROJECTS`
- * ($63,040 and $48,600), because the capital projects section further down the
- * transparency page is the same money counted a second way. The rest are seeded so
- * the column totals land on `TRANSPARENCY` below — $900,000 target, $723,000 raised.
+ * invented: construction imports the exact raised and spent totals of `PROJECTS`,
+ * because the capital projects section further down the transparency page is the same
+ * money counted a second way. Importing them rather than restating them is what stops
+ * the two pages disagreeing after somebody edits a project. The rest are seeded so the
+ * column totals land on `TRANSPARENCY` below — $900,000 target, $723,000 raised.
  */
 const ALLOCATIONS: TargetAllocation[] = [
   {
@@ -27,7 +29,7 @@ const ALLOCATIONS: TargetAllocation[] = [
   },
   {
     key: 'festivals',
-    label: 'Festivals & Puja\'s',
+    label: 'Festivals & utsavams',
     detail: 'The twenty festivals of the temple year — from Aadi Perukku to Chithirai.',
     targetAmount: 205_000,
     collectedAmount: 180_200,
@@ -36,10 +38,10 @@ const ALLOCATIONS: TargetAllocation[] = [
   {
     key: 'construction',
     label: 'Temple construction & renovation',
-    detail: 'Sanctum repainting, parking extension, the peacock enclosure and the library.',
+    detail: 'The rajagopuram, the navagraha sannidhi, the solar roof and the accessibility lift.',
     targetAmount: 162_000,
-    collectedAmount: 63_040,
-    spentAmount: 48_600,
+    collectedAmount: PROJECTS_RAISED,
+    spentAmount: PROJECTS_SPENT,
   },
   {
     key: 'annadanam',
@@ -240,11 +242,10 @@ export const EMAIL_TEMPLATES = [
     subject: 'Your {{year}} contribution statement',
     body: 'Dear {{devoteeName}},\n\nThank you for your support. Your total deductible contribution for {{year}} was {{amount}}.\nSri Meenakshi Temple Society is a 501(c)(3) organization; EIN {{ein}}. No goods or services were provided in exchange.',
   },
-  // Membership temporarily disabled
-  // {
-  // id: 'tpl_renewal',
-  // name: 'Membership renewal reminder',
-  // subject: 'Your {{tier}} membership renews on {{date}}',
-  // body: 'Dear {{devoteeName}},\n\nYour {{tier}} membership expires on {{date}}. Renew online in under a minute to keep your family’s benefits active.',
-  // },
+  {
+    id: 'tpl_renewal',
+    name: 'Membership renewal reminder',
+    subject: 'Your {{tier}} membership renews on {{date}}',
+    body: 'Dear {{devoteeName}},\n\nYour {{tier}} membership expires on {{date}}. Renew online in under a minute to keep your family’s benefits active.',
+  },
 ]

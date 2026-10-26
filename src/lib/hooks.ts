@@ -7,19 +7,41 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 export function useAsync<T>(fn: () => Promise<T>, deps: unknown[] = []) {
   const [data, setData] = useState<T | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const [nonce, setNonce] = useState(0)
   const fnRef = useRef(fn)
   fnRef.current = fn
 
+  /* A `refresh()` is a silent re-read; a dependency change is a different question
+     being asked. The two used to be indistinguishable, so every poll raised
+     `loading` and the screen it was polling was replaced by its own skeleton and
+     back — on the kitchen board, which re-reads every ten seconds, that looked
+     exactly like the page reloading on a timer. */
+  const seenNonce = useRef(nonce)
+  const hasData = useRef(false)
+
   useEffect(() => {
     let live = true
-    setLoading(true)
+    const isSilentRefresh = seenNonce.current !== nonce && hasData.current
+    seenNonce.current = nonce
+
+    if (isSilentRefresh) setRefreshing(true)
+    else setLoading(true)
+
     fnRef
       .current()
-      .then((r) => live && setData(r))
+      .then((r) => {
+        if (!live) return
+        setData(r)
+        hasData.current = true
+      })
       .catch((e: Error) => live && setError(e))
-      .finally(() => live && setLoading(false))
+      .finally(() => {
+        if (!live) return
+        setLoading(false)
+        setRefreshing(false)
+      })
     return () => {
       live = false
     }
@@ -28,7 +50,8 @@ export function useAsync<T>(fn: () => Promise<T>, deps: unknown[] = []) {
 
   const refresh = useCallback(() => setNonce((n) => n + 1), [])
 
-  return { data, loading, error, refresh, setData }
+  /** `loading` is first paint and a changed question; `refreshing` is a poll. */
+  return { data, loading, refreshing, error, refresh, setData }
 }
 
 /** Debounced value — used by the admin search inputs. */

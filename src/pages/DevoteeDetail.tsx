@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { Mail, MapPin, Phone, Save, SquarePen, Unlock } from 'lucide-react'
+import { CalendarCheck2, Mail, MapPin, Phone, Save, SquarePen, Unlock } from 'lucide-react'
 import type { FamilyMember, User } from '@/lib/data/types'
 import { PageShell } from '@/components/layout/PageShell'
 import { FamilyTreeEditor } from '@/components/shared/FamilyTreeEditor'
-import { RoleBadge, StatusPill /*, TierBadge */ } from '@/components/shared/badges'
+import { RoleBadge, StatusPill, TierBadge } from '@/components/shared/badges'
 import { EmptyState, LoadingSkeleton } from '@/components/shared/states'
 import { StatTile } from '@/components/shared/StatTile'
 import { Avatar, Badge } from '@/components/ui/badge'
@@ -18,23 +18,30 @@ import { useToast } from '@/components/ui/toast'
 import {
   getDevoteeById,
   getFamilyTree,
-  // getMembership, // Membership temporarily disabled
+  getMembership,
   getMyBookings,
   isRealisedBooking,
   listDonations,
+  listPledges,
   saveFamilyTree,
   updateDevotee,
 } from '@/lib/data/api'
-import { GOTHRAS, NAKSHATRAS, PUJA_BY_ID } from '@/lib/data/mock'
+import { GOTHRAS, NAKSHATRAS, PUJA_BY_ID, TIER_BY_KEY } from '@/lib/data/mock'
 import { useAsync } from '@/lib/hooks'
+import { PledgeSchedule } from '@/components/shared/PledgeSchedule'
+import { ageOn, isEligibleFor, priceFor } from '@/lib/membership'
+import { describePlan, pledgeTotals, summarisePledges } from '@/lib/pledge'
 import { fmtDate, money, titleCase } from '@/lib/utils'
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'bookings', label: 'Bookings' },
   { key: 'donations', label: 'Donations' },
-  // Membership temporarily disabled
-  // { key: 'membership', label: 'Membership' },
+  // Beside Donations rather than inside it: a promise and a gift are different facts
+  // about this devotee, and a tab that mixed them would make the lifetime total above
+  // impossible to read.
+  { key: 'pledges', label: 'Pledges' },
+  { key: 'membership', label: 'Membership' },
   { key: 'family', label: 'Family' },
   { key: 'notes', label: 'Notes' },
 ]
@@ -56,8 +63,9 @@ export default function DevoteeDetail() {
         getDevoteeById(id!),
         getMyBookings(id!),
         listDonations(id!),
-        // getMembership(id!), // Membership temporarily disabled
         getFamilyTree(id!),
+        listPledges(id!),
+        getMembership(id!),
       ]),
     [id],
   )
@@ -76,8 +84,11 @@ export default function DevoteeDetail() {
     )
   }
 
-  // Membership temporarily disabled — `membership` removed from the tuple above.
-  const [user, bookings, donations, tree] = data
+  const [user, bookings, donations, tree, pledges, membership] = data
+  /* Deliberately not folded into `lifetime` below. What this devotee has promised and
+     what they have given are different numbers, and the second is the only one the
+     temple has actually received. */
+  const pledgeSummary = summarisePledges(pledges)
 
   if (!user) {
     return (
@@ -97,6 +108,8 @@ export default function DevoteeDetail() {
     donations.reduce((s, d) => s + d.amount, 0) +
     bookings.filter(isRealisedBooking).reduce((s, b) => s + b.amount, 0)
   const activeBookings = bookings.filter((b) => b.status === 'active')
+  const age = ageOn(user.dob)
+  const seniorEligible = isEligibleFor('senior', user)
 
   const save = async () => {
     if (!form) return
@@ -126,8 +139,7 @@ export default function DevoteeDetail() {
           <Avatar initials={user.avatarInitials} className="size-8 text-sm" />
           <span className="truncate">{user.name}</span>
           <RoleBadge role={user.role} />
-          {/* Membership temporarily disabled */}
-          {/* {membership ? <TierBadge tier={membership.tier} /> : null} */}
+          {membership ? <TierBadge tier={membership.tier} /> : null}
         </span>
       }
       description={
@@ -155,7 +167,7 @@ export default function DevoteeDetail() {
       tabs={<Tabs items={TABS} value={tab} onChange={setTab} />}
     >
       {/* Membership tile is commented out below, so this row runs 3-up (was lg:grid-cols-4). */}
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile
           label="Lifetime contributions"
           value={money(lifetime)}
@@ -173,13 +185,30 @@ export default function DevoteeDetail() {
           value={donations.length}
           sub={money(donations.reduce((s, d) => s + d.amount, 0))}
         />
-        {/* Membership temporarily disabled */}
-        {/* <StatTile
+        {pledgeSummary.outstanding > 0 ? (
+          <StatTile
+            label="Pledged, outstanding"
+            value={money(pledgeSummary.outstanding)}
+            sub={
+              pledgeSummary.overdue > 0
+                ? `${money(pledgeSummary.overdue)} overdue`
+                : `${pledgeSummary.count} live ${pledgeSummary.count === 1 ? 'pledge' : 'pledges'}`
+            }
+            tone="gold"
+          />
+        ) : null}
+        <StatTile
           label="Membership"
-          value={membership ? titleCase(membership.tier) : 'None'}
-          sub={membership ? `Expires ${fmtDate(membership.endDate, 'MMM yyyy')}` : 'Not enrolled'}
+          value={membership ? (TIER_BY_KEY.get(membership.tier)?.label ?? '—') : 'None'}
+          sub={
+            membership
+              ? `${titleCase(membership.status)} · ${fmtDate(membership.endDate, 'MMM yyyy')}`
+              : seniorEligible
+                ? 'Not enrolled — qualifies for the senior rate'
+                : 'Not enrolled'
+          }
           tone="gold"
-        /> */}
+        />
       </div>
 
       {tab === 'overview' ? (
@@ -314,18 +343,80 @@ export default function DevoteeDetail() {
         )
       ) : null}
 
-      {/* Membership temporarily disabled */}
-      {/* {tab === 'membership' ? (
+      {tab === 'pledges' ? (
+        pledges.length === 0 ? (
+          <EmptyState
+            Icon={CalendarCheck2}
+            title="No pledges"
+            detail="This devotee has not promised a future gift."
+          />
+        ) : (
+          <div className="space-y-4">
+            {pledges.map((p) => {
+              const totals = pledgeTotals(p)
+              return (
+                <Card key={p.id} className="overflow-hidden">
+                  <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 border-b border-line p-5">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="font-serif text-lg text-ink">
+                          {titleCase(p.category)} fund
+                        </h2>
+                        <StatusPill status={p.status} />
+                      </div>
+                      <p className="mt-1 text-base text-muted">
+                        {describePlan(
+                          { amount: p.amount, cadence: p.cadence, count: p.installments.length },
+                          money,
+                        )}
+                        {' · '}
+                        {p.id} · paying by {titleCase(p.intendedMethod)}
+                      </p>
+                      {p.note ? <p className="mt-0.5 text-sm text-muted">{p.note}</p> : null}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-xl tabular-nums text-ink">{money(totals.outstanding)}</p>
+                      <p className="text-sm text-muted">outstanding of {money(totals.pledged)}</p>
+                    </div>
+                  </div>
+                  <div className="px-5 py-1">
+                    <PledgeSchedule installments={p.installments} />
+                  </div>
+                  <div className="border-t border-line bg-tint/40 px-5 py-2.5">
+                    <Link
+                      to="/donations/pledges"
+                      className="text-sm font-medium text-brand-600 hover:underline"
+                    >
+                      Record a payment in the pledge register →
+                    </Link>
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+        )
+      ) : null}
+
+      {tab === 'membership' ? (
         <Card className="p-5">
           {membership ? (
             <dl className="divide-y divide-line text-base">
               {[
-                ['Tier', titleCase(membership.tier)],
+                ['Membership', TIER_BY_KEY.get(membership.tier)?.label ?? membership.tier],
                 ['Status', titleCase(membership.status)],
                 ['Started', fmtDate(membership.startDate)],
                 ['Renews / expires', fmtDate(membership.endDate)],
                 ['Auto-renew', membership.autoRenew ? 'On' : 'Off'],
                 ['Family plan', membership.familyPlan ? 'Yes' : 'No'],
+                [
+                  'Annual dues',
+                  money(
+                    priceFor(TIER_BY_KEY.get(membership.tier)?.price ?? 0, membership.familyPlan),
+                  ),
+                ],
+                // Printed on the record because it is what decides whether the senior
+                // rate is theirs to take, and a desk should not have to work it out.
+                ['Age', age === null ? 'Date of birth not on file' : `${age}`],
               ].map(([k, v]) => (
                 <div key={k} className="flex items-baseline justify-between gap-4 py-2.5">
                   <dt className="text-muted">{k}</dt>
@@ -336,7 +427,11 @@ export default function DevoteeDetail() {
           ) : (
             <EmptyState
               title="Not a member"
-              detail="This devotee has never enrolled in a membership tier."
+              detail={
+                seniorEligible
+                  ? 'This devotee has never enrolled — and qualifies for the senior citizen rate.'
+                  : 'This devotee has never enrolled in a membership.'
+              }
               action={
                 <Link to="/memberships" className={buttonVariants({ size: 'sm' })}>
                   Gift a membership
@@ -345,7 +440,7 @@ export default function DevoteeDetail() {
             />
           )}
         </Card>
-      ) : null} */}
+      ) : null}
 
       {tab === 'family' ? (
         <Card className="p-5">

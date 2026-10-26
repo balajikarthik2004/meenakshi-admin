@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/toast'
 import { createMembership, listDevotees, listMemberships } from '@/lib/data/api'
 import { TIERS } from '@/lib/data/mock'
 import { useAsync } from '@/lib/hooks'
+import { SENIOR_MIN_AGE, ageOn, eligibilityFor, isRenewingSoon } from '@/lib/membership'
 import { fmtDate, money, titleCase } from '@/lib/utils'
 
 interface Row {
@@ -38,7 +39,7 @@ export default function Memberships() {
   const [window, setWindow] = useState('30')
   const [gifting, setGifting] = useState(false)
   const [giftTo, setGiftTo] = useState('')
-  const [giftTier, setGiftTier] = useState<MembershipTier>('gold')
+  const [giftTier, setGiftTier] = useState<MembershipTier>('normal')
   const [giftFamily, setGiftFamily] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -109,6 +110,13 @@ export default function Memberships() {
     })
     refresh()
   }
+
+  const giftRecipient = (data?.[1] ?? []).find((u) => u.id === giftTo)
+  const giftEligibility = giftRecipient
+    ? eligibilityFor('senior', giftRecipient)
+    : ('no-dob' as const)
+  const giftRecipientMay = (t: MembershipTier) =>
+    t !== 'senior' || (!!giftRecipient && giftEligibility === 'eligible')
 
   const columns: Column<Row>[] = [
     {
@@ -183,22 +191,31 @@ export default function Memberships() {
       }
     >
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {(['silver', 'gold', 'platinum'] as const).map((t) => (
+        {TIERS.map((t) => (
           <StatTile
-            key={t}
-            label={`${titleCase(t)} members`}
+            key={t.tier}
+            label={`${t.label} — active`}
             value={
-              allRows.filter((r) => r.membership.tier === t && r.membership.status === 'active')
-                .length
+              allRows.filter(
+                (r) => r.membership.tier === t.tier && r.membership.status === 'active',
+              ).length
             }
-            sub={`${money(TIERS.find((x) => x.tier === t)!.price)} / year`}
-            tone={t === 'gold' ? 'gold' : t === 'platinum' ? 'brand' : 'default'}
+            sub={`${money(t.price)} / year`}
+            tone={t.tier === 'senior' ? 'brand' : 'gold'}
           />
         ))}
         <StatTile
           label="Lapsed"
           value={allRows.filter((r) => r.membership.status !== 'active').length}
           sub="Expired or cancelled"
+        />
+        {/* Renewals inside the window the office actually chases. A count of lapsed
+            memberships says what was lost; this one says what can still be saved. */}
+        <StatTile
+          label="Renewing within 45 days"
+          value={allRows.filter((r) => isRenewingSoon(r.membership)).length}
+          sub="Worth a reminder call"
+          tone="leaf"
         />
       </div>
 
@@ -211,10 +228,10 @@ export default function Memberships() {
               aria-label="Filter by tier"
               className="w-[150px]"
             >
-              <option value="">All tiers</option>
+              <option value="">All memberships</option>
               {TIERS.map((t) => (
                 <option key={t.tier} value={t.tier}>
-                  {titleCase(t.tier)}
+                  {t.label}
                 </option>
               ))}
             </Select>
@@ -341,19 +358,38 @@ export default function Memberships() {
               ))}
             </Select>
           </Field>
-          <Field label="Tier" htmlFor="gm-tier">
+          <Field label="Membership" htmlFor="gm-tier">
             <Select
               id="gm-tier"
               value={giftTier}
               onChange={(e) => setGiftTier(e.target.value as MembershipTier)}
             >
               {TIERS.map((t) => (
-                <option key={t.tier} value={t.tier}>
-                  {titleCase(t.tier)} — {money(t.price)}
+                <option key={t.tier} value={t.tier} disabled={!giftRecipientMay(t.tier)}>
+                  {t.label} — {money(t.price)}
+                  {!giftRecipientMay(t.tier) ? ' (not eligible)' : ''}
                 </option>
               ))}
             </Select>
           </Field>
+          {/* The age rule is the devotee's entitlement, so the console is held to it
+              too. A desk that can quietly grant the concession to a forty-year-old is
+              a desk the rule does not actually apply to. */}
+          {giftRecipient && !giftRecipientMay('senior') ? (
+            <p className="text-base text-muted">
+              {giftEligibility === 'no-dob' ? (
+                <>
+                  {giftRecipient.name} has no date of birth on file, so the senior citizen rate
+                  cannot be verified. Add it on their record first.
+                </>
+              ) : (
+                <>
+                  {giftRecipient.name} is {ageOn(giftRecipient.dob)} — the senior citizen rate
+                  applies from {SENIOR_MIN_AGE}.
+                </>
+              )}
+            </p>
+          ) : null}
           <label className="flex cursor-pointer items-center gap-3 text-base">
             <Checkbox checked={giftFamily} onChange={(e) => setGiftFamily(e.target.checked)} />
             Include family plan (spouse and minor children)
